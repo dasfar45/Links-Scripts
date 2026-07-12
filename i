@@ -3,7 +3,7 @@
 // @name         Roleta Maluca Chess.com
 // @namespace    http://tampermonkey.net/
 // @version      1.3
-// @description  Roleta 60fps com música de fundo, confetes, sons de comemoração e sistema anti-repetição.
+// @description  Roleta 60fps com música de fundo, confetes, sons de comemoração.
 // @match        *://*.chess.com/*
 // @grant        none
 // ==/UserScript==
@@ -15,35 +15,40 @@
 
     const whiteOpenings = [
         { name: "Gambito Ismael", variation: "Fuga do Hospicio", notation: "1.e4 e5 2.Cf3 Cc6 3.Cc3 Cf6 4.Cxe5" },
-        { name: "Gambito PipipiTchu", variation: "Fic Tranquilo", notation: "1.e4 2.f4 3.Cf3 4.c3" },
+        { name: "Gambito Pipipi Tchu", variation: "Fic Tranquilo", notation: "1.e4 2.f4 3.Cf3 4.c3" },
         { name: "Gambito CPF Cancelado", variation: "FBI, Open the Door", notation: "1.d4 2.e4 3.c3 4.f3" },
         { name: "Gambito da Batatinha", variation: "Maionese com Chumbo", notation: "1.c4 2.b4 3.a3 4.e4" },
-        { name: "Gambito Laranja Mofada", variation: "Charope amargo", notation: "1.g4 2.Bg2 3.c4 4.Db3" },
+        { name: "Gambito Tchurosbangos", variation: "Suco Tang", notation: "1.g4 2.Bg2 3.c4 4.Db3" },
         { name: "Abertura Barabin' Barabest", variation: "Ataque do Soldado Manco", notation: "1.a3 e5 2.h4 3.Th3" },
-        { name: "Abertura da Galinha Pestiada", variation: "Ataque do Pavão Malandreu, Subvariação Pirlim Pimpim", notation: "1.g4 d5 2.Bg2 3.c4" },
+        { name: "Abertura da Galinha Pestiada", variation: "Ataque do Pavão Malandréu", notation: "1.g4 d5 2.Bg2 3.c4" },
         { name: "Abertura Pipipi Popopo", variation: "Derrame Cerebral", notation: "1.h4 2.Ca3 3.g3" },
         { name: "Abertura Tutti Fruti", variation: "Banana com Ovos", notation: "1.b4 2.Bb2 3.e3" },
         { name: "Abertura Tralalero Tralala", variation: "Titanic", notation: "1.Cf3 2.a3 3.h3" },
-        { name: "Abertura Bilu Tetéia", variation: "Cabeça de Tilápia", notation: "1.d3 2.Cd2 3.e4" },
-        { name: "Abertura da Minhoca", variation: "Smilingüido", notation: "1.b4 2.Bb2 3.a3" },
-        { name: "Abertura Paralelepípedo", variation: "Pneu Cansado", notation: "1.h4 2.Ch3 3.g3" },
-        { name: "Abertura do Pneu Murcho", variation: "Cabeça de Tilápia", notation: "1.a4 2.Ta3 3.h3" },
+        { name: "Abertura Bilu Tetéia", variation: "Cabeça de Tilápia", notation: "1.a3 2.h3 3.a4 4.d4 5.c4 6.Ca3" },
+        { name: "Abertura da Minhoca", variation: "Labirinto de Tuneis", notation: "1.b4 2.Bb2 3.a3" },
+        { name: "Abertura Paralelepípedo", variation: "Hipotenusa Diabólica", notation: "1.h4 2.Ch3 3.g3" },
+        { name: "Abertura do Pneu Murcho", variation: "Cavalinho De Pal", notation: "1.a4 2.Ta3 3.h3" },
+        { name: "Abertura Uga Uga", variation: "Pedrada no Coco", notation: "1.a3 2.Ta2 3.h4 4.Th3 5.f3 6.Rf2" },
         { name: "Abertura Franskestein", variation: "Parafuso Solto", notation: "1.a3 2.Th2 3.f3 4.Rf2" },
         { name: "Abertura Pipipi Popopo", variation: "Pirlim Pimpim", notation: "1.g4 2.Bg2 3.c4" }
     ];
 
     const blackDefenses = [
-        { name: "Defesa Indiana", variation: "Feijão e Arroz", notation: "1.e4 a5 2.d4 Ta6 3.Cf3 e6" },
-        { name: "Defesa do Cactu", variation: "Sangrenta", notation: "1.e4 g5 2.d4 Bg7 3.Cf3 c5" },
-        { name: "Defesa da Tartaruga", variation: "Flash", notation: "1.e4 Na6 2.d4 c6 3.Cf3" },
-        { name: "Defesa Nemesis", variation: "Cagaço Gaymes", notation: "1.e4 h6 2.d4 g5 3.Cf3 Bg7" },
+        { name: "Defesa Cinza", variation: "Preto no Branco", notation: "1.e4 a5 2.d4 Ta6 3.Cf3 e6" },
+        { name: "Gambito Da Vingança ", variation: "Alma Envenenada", notation: "1.e4 a5 2.Cf3 Ta6 3.Bc4 h6 4.Ce5 d6 5.Cg6 fxg6 6.d4 e5 7.dxe5 Dh4 8.O-O Dxe4 9.exd6" },
+        { name: "Gambito Da Donzela  ", variation: "Flerte Mortal", notation: "1.e4 h5 2.d4 Ta6 3.Cc3 Ch6 4.Bxh6 gxh6 5.Dxh5 Tg6 6.Cf3 e6 7.Bd3 d6 8.e5 Tg5" },
+        { name: "Defesa Sussuarana", variation: "Cheiro de Capivara", notation: "1.e4 g5 2.d4 Bg7 3.Cf3 c5" },
+        { name: "Defesa da Tartaruga", variation: "Flash", notation: "1.e4 Ca6 2.d3 b6 3.Cc3 Bb7 4.Cge2 e5 5.f4 Cb4 6.g3 d5 7.Bg2 dxe4 8.Cxe4" },
+        { name: "Defesa do Zumbi", variation: "Cérebro Suculento", notation: "1.e4 h6 2.d4 g5 3.Cf3 b5" },
         { name: "Defesa do Pavão", variation: "Dança Hipnotica", notation: "1.e4 f6 2.d4 Kf7 3.Cf3 e6" },
         { name: "Defesa Triângulo das Bermudas", variation: "Barco Afundado", notation: "1.e4 b5 2.d4 Bb7 3.Cf3 e6" },
         { name: "Defesa do Indio", variation: "Flechada Nas Costas", notation: "1.e4 a6 2.d4 h5 3.Cf3 b5" },
         { name: "Defesa do Sapo", variation: "Cueca Magnética", notation: "1.e4 g6 2.d4 Bh6 3.Cf3 d6" },
         { name: "Defesa da Penellope", variation: "Beijos Mortais", notation: "1.e4 c6 2.d4 Qa5+ 3.Cf3 d5" },
+        { name: "Defesa das 3 Cobras", variation: "Picada Sonolenta", notation: "1.e4 Na6 2.d4 c6 3.Cf3" },
+        { name: "Defesa das Orbies", variation: "Spiral Azul", notation: "1.e4 Na6 2.d4 Tb8 3.Cf3 b5" },
         { name: "Defesa do Jig Saw", variation: "Que Comecem os Jogos", notation: "1.e4 h5 2.d4 Th6 3.Cf3 a5 4.Bc4 Ta6 5.O-O Tg6" },
-        { name: "Defesa do Nokia Tijolão", variation: "Tela Trincada ☠️", notation: "1.e4 h5 2.d4 Rh7 3.Cf3 g6" }
+        { name: "Defesa do Nokia Tijolão", variation: "Tela Trincada", notation: "1.e4 h5 2.d4 Rh7 3.Cf3 g6" }
     ];
 
     let currentMode = localStorage.getItem('chessRouletteMode') || 'white';
