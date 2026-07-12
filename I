@@ -1,18 +1,11 @@
 // ==UserScript==
-// @name         Xadrez Legal 123
+//
+// @name         pimba.com
 // @namespace    http://tampermonkey.net/
-// @version      159.1
-// @description  O script mais insano da Via Lactea - Upload de Vídeos Instantâneo (Direct Blob) & Previews Otimizados + Efeitos de Movimento Isolados + Opacidade + Gradientes 100% Adaptativos + Notas Transparentes
-// @author       GalinhaCaipira Vs Tigre da Malásia
-// @match        https://www.chess.com/*
-// @grant        GM_setValue
-// @grant        GM_getValue
-// @grant        GM_deleteValue
-// @grant        GM_addStyle
-// @run-at       document-start
-// @license      Unlicense
-// @downloadURL https://update.greasyfork.org/scripts/570333/Xadrez%20Legal%20123.user.js
-// @updateURL https://update.greasyfork.org/scripts/570333/Xadrez%20Legal%20123.meta.js
+// @version      1.2
+// @description  Roleta 60fps com música de fundo, confetes e sons de comemoração.
+// @match        *://*.chess.com/*
+// @grant        none
 // ==/UserScript==
 
 (function() {
