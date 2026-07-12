@@ -1,0 +1,2454 @@
+// ==UserScript==
+// @name         Xadrez Legal 123
+// @namespace    http://tampermonkey.net/
+// @version      159.1
+// @description  O script mais insano da Via Lactea - Upload de Vídeos Instantâneo (Direct Blob) & Previews Otimizados + Efeitos de Movimento Isolados + Opacidade + Gradientes 100% Adaptativos + Notas Transparentes
+// @author       GalinhaCaipira Vs Tigre da Malásia
+// @match        https://www.chess.com/*
+// @grant        GM_setValue
+// @grant        GM_getValue
+// @grant        GM_deleteValue
+// @grant        GM_addStyle
+// @run-at       document-start
+// @license      Unlicense
+// @downloadURL https://update.greasyfork.org/scripts/570333/Xadrez%20Legal%20123.user.js
+// @updateURL https://update.greasyfork.org/scripts/570333/Xadrez%20Legal%20123.meta.js
+// ==/UserScript==
+
+(function() {
+    'use strict';
+    console.log("Xadrez Legal: Iniciando carregamento do script...");
+
+    let ttPolicy;
+    if (window.trustedTypes && window.trustedTypes.createPolicy) {
+        try {
+            ttPolicy = window.trustedTypes.createPolicy('chess-ui-policy', { createHTML: s => s });
+        } catch (e) {
+            ttPolicy = window.trustedTypes.getPolicy('chess-ui-policy') || { createHTML: s => s };
+        }
+    } else {
+        ttPolicy = { createHTML: s => s };
+    }
+
+    const safeParseJSON = (dataStr, fallback) => {
+        try {
+            return JSON.parse(dataStr);
+        } catch (e) {
+            return fallback;
+        }
+    };
+
+    const safeSetValue = (key, value) => {
+        try {
+            GM_setValue(key, value);
+        } catch (e) {
+            console.error("Xadrez Legal: Limite de memória excedido ao salvar. Tente limpar o histórico ou usar imagens menores.", e);
+        }
+    };
+
+    const FACTORY_IMAGES = [
+    "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/Screenshot_17777.-fotor-enhance-2026031801921.jpg",
+    "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/Screenshot_4(1898.jpg",
+    "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/xadrez%20legal-artguru(1).png",
+    "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/xadrez%206.png",
+    "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/xadrez%207.png",
+    "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/xadrez%208.png",
+    "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/xadrez%209.jpg",
+    "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/xadrez%2012.png",
+    "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/xadrez%20115.png",
+    "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/xadrez%20124.png",
+    "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/xadrez%20130.png",
+    "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/xadrez%20131.png",
+    "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/xadrez%20136.png",
+    "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/xadrez%20137.png",
+    "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/140.png",
+    "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/141.png",
+    "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/146.png",
+    "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/147.png",
+    "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/148.png",
+    "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/149.png",
+    "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/150.png",
+    "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/151.png",
+    "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/152.png",
+    "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/155.png",
+    "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/159.png",
+    "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/161.png",
+    "https://raw.githubusercontent.com/dasfar45/chess-assets-2/main/xadrez%20220.png",
+    "https://raw.githubusercontent.com/dasfar45/chess-assets-2/main/xadrez%20221.png",
+    "https://raw.githubusercontent.com/dasfar45/chess-assets-2/main/xadrez%2091.png",
+    "https://raw.githubusercontent.com/dasfar45/chess-assets-2/main/xadrez%2092.png",
+    "https://raw.githubusercontent.com/dasfar45/chess-assets-2/main/xadrez%2092.png",
+    "https://raw.githubusercontent.com/dasfar45/chess-assets-2/main/xadrez%2093.png",
+    "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/xadrez%2099.png",
+    "https://raw.githubusercontent.com/dasfar45/chess-assets-2/main/xadrez%20222.png"
+];
+    const FACTORY_VIDEOS = [
+        "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/cidade.mp4",
+        "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/mine%20noite%20(online-video-cutter.com)(1).mp4",
+        "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/minecraft.mp4",
+        "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/chuva.mp4",
+        "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/natal.mp4",
+        "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/video%20009.mp4"
+    ];
+
+    const SWORD_CURSOR = "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/esapda%20daimnte%20tunada_preview_rev_1.png";
+    const TITANIUM_ROOK_IMG = "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/Torres%20Branca.png";
+    const TITANIUM_KNIGHT_IMG = "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/Cavalos%20brancos.png";
+    const TITANIUM_BISHOP_IMG = "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/Bispos%20Brancos%2029.png";
+    const TITANIUM_KING_IMG = "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/rei%20branco.png";
+    const TITANIUM_QUEEN_IMG = "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/Dama%20Branca.png";
+    const TITANIUM_PAWN_IMG = "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/Pe%C3%A3o%20Branco.png";
+
+    const TITANIUM_BLACK_ROOK_IMG = "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/Torre%20Negra.png";
+    const TITANIUM_BLACK_KNIGHT_IMG = "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/Cavalo%20Negro.png";
+    const TITANIUM_BLACK_BISHOP_IMG = "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/Bispo%20Negro.png";
+    const TITANIUM_BLACK_KING_IMG = "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/Rei%20Negro.png";
+    const TITANIUM_BLACK_QUEEN_IMG = "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/Dama%20Negra.png";
+    const TITANIUM_BLACK_PAWN_IMG = "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/Pe%C3%A3o%20Negro.png";
+
+    const MUSIC_LIST = [
+        { name: "Better Days", url: "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/LAKEY%20INSPIRED%20-%20Better%20Days.mp3" },
+        { name: "Days Like These", url: "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/LAKEY%20INSPIRED%20-%20Days%20Like%20These.mp3" },
+        { name: "Sanctuary", url: "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/Sanctuary%20-%20M%C3%BAsica%20Dram%C3%A1tica%20e%20de%20Mist%C3%A9rio%20para%20usar%20em%20fundo%20de%20v%C3%ADdeos%20%5BCanal%20Resumindo%20Filmes%5D.mp3" },
+        { name: "School Rooftop", url: "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/Hisohkah%20-%20School%20Rooftop(1).mp3" },
+        { name: "A Future City", url: "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/You're%20Chilling%20In%20A%20Future%20City%20(mp3cut.net).mp3" },
+        { name: "Rain", url: "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/Assassin's%20Creed%20Shadows%20Night%20rain%20ambient%20sounds.mp3" },
+        { name: "Forest Sounds", url: "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/Forest%20Sounds%20_%20Woodland%20Ambience,%20Bird%20Song%20(mp3cut.net).mp3" },
+        { name: "Art of Silence", url: "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/Art%20of%20Silence%20-%20Dramatic%20Cinematic%20%5BFree%20to%20use%5D.mp3" },
+        { name: "Resident Evil 3 Save Room Theme", url: "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/Resident%20Evil%203%20Save%20Room%20Theme.mp3" },
+        { name: "Resident Evil 4 Save Theme", url: "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/Resident%20Evil%204%20Save%20Theme.mp3" },
+        { name: "Near Theme", url: "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/Near%20theme.mp3" },
+        { name: "L Theme", url: "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/L%20theme.mp3" },
+        { name: "Lofi Hip Hop _ Anywhen you say", url: "https://raw.githubusercontent.com/dasfar45/Chess_assets/main/Lofi%20Hip%20Hop%20_%20Anywhen%20you%20say.mp3" }
+    ];
+
+    const MAX_HISTORY = 50;
+    const MAX_VIDEO_HISTORY = 10;
+    const RECENT_LIMIT = 8;
+
+    // ----- INÍCIO DO SISTEMA INDEXEDDB PARA VÍDEOS (OTIMIZADO PARA BLOBS DIRETOS) -----
+    const dbPromise = new Promise((resolve, reject) => {
+        const req = indexedDB.open('XadrezLegalVideoDB', 2);
+        req.onupgradeneeded = e => {
+            const db = e.target.result;
+            if (db.objectStoreNames.contains('videos')) {
+                db.deleteObjectStore('videos');
+            }
+            db.createObjectStore('videos');
+        };
+        req.onsuccess = e => resolve(e.target.result);
+        req.onerror = e => reject(e);
+    });
+
+    async function saveLocalVideo(id, blobFile) {
+        try {
+            const db = await dbPromise;
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction('videos', 'readwrite');
+                const req = tx.objectStore('videos').put(blobFile, id);
+                req.onsuccess = () => resolve();
+                req.onerror = () => reject(req.error);
+            });
+        } catch(e) { console.error('Xadrez Legal DB Error:', e); }
+    }
+
+    const localVideoUrlCache = {};
+
+    async function getLocalVideoURL(id) {
+        if (localVideoUrlCache[id]) return localVideoUrlCache[id];
+        try {
+            const db = await dbPromise;
+            return new Promise(resolve => {
+                const req = db.transaction('videos').objectStore('videos').get(id);
+                req.onsuccess = () => {
+                    if (req.result) {
+                        const url = URL.createObjectURL(req.result);
+                        localVideoUrlCache[id] = url;
+                        resolve(url);
+                    } else {
+                        resolve(null);
+                    }
+                };
+                req.onerror = () => resolve(null);
+            });
+        } catch(e) { return null; }
+    }
+
+    async function deleteLocalVideo(id) {
+        try {
+            if (localVideoUrlCache[id]) {
+                URL.revokeObjectURL(localVideoUrlCache[id]);
+                delete localVideoUrlCache[id];
+            }
+            const db = await dbPromise;
+            const tx = db.transaction('videos', 'readwrite');
+            tx.objectStore('videos').delete(id);
+        } catch(e) { console.error('Xadrez Legal DB Error:', e); }
+    }
+    // ----- FIM DO SISTEMA INDEXEDDB -----
+
+    let globalAudio = new Audio();
+    globalAudio.crossOrigin = "anonymous";
+    globalAudio.loop = true;
+    globalAudio.preload = "auto";
+    globalAudio.volume = GM_getValue('music_volume', 0.5);
+
+    let userPausedMusic = false;
+    let cachedBgVideoActive = GM_getValue('use_bg_video', false);
+    let cachedVideoData = GM_getValue('chess_board_video_data', FACTORY_VIDEOS[0]);
+    let cachedVideoSound = GM_getValue('video_sound_active', false);
+    let cachedVideoVolume = GM_getValue('video_volume', 0.5);
+
+    document.addEventListener('mousedown', () => {
+        if (!userPausedMusic && globalAudio.src && globalAudio.paused && !globalAudio.ended && globalAudio.readyState > 0) {
+            globalAudio.play().catch(() => {});
+        }
+        document.querySelectorAll('.custom-chess-bg-video').forEach(vid => {
+            if (vid.paused) vid.play().catch(() => {});
+            vid.muted = !cachedVideoSound;
+            vid.volume = cachedVideoVolume;
+        });
+    }, { once: false });
+
+    // Histórico de Imagens
+    let savedHistory = safeParseJSON(GM_getValue('chess_board_history', '[]'), []);
+    let combinedHistory = [...FACTORY_IMAGES];
+    savedHistory.forEach(img => { if (!combinedHistory.includes(img)) combinedHistory.push(img); });
+    safeSetValue('chess_board_history', JSON.stringify(combinedHistory.slice(0, MAX_HISTORY)));
+
+    // Histórico de Vídeos (Limpeza e Sincronia)
+    let savedVideoHistory = safeParseJSON(GM_getValue('chess_video_history', '[]'), []);
+    let combinedVideoHistory = [...FACTORY_VIDEOS];
+    savedVideoHistory.forEach(vid => { if (!combinedVideoHistory.includes(vid)) combinedVideoHistory.push(vid); });
+    safeSetValue('chess_video_history', JSON.stringify(combinedVideoHistory.slice(0, MAX_VIDEO_HISTORY)));
+
+    const initialOpacity = GM_getValue('dark_squares_opacity', 0.2);
+    const initialGridColor = GM_getValue('dark_squares_color', '#000000');
+    const initialBlackGridActive = GM_getValue('black_grid_active', true);
+    const useHighlight = GM_getValue('use_custom_highlight', true);
+
+    const useBgImage = GM_getValue('use_bg_image', true);
+    const useTitaniumPieces = GM_getValue('use_titanium_pieces', false);
+    const useNeonCursor = GM_getValue('use_neon_cursor', true);
+    const useCursorLock = GM_getValue('use_cursor_lock', true);
+    const useSwordCursor = GM_getValue('use_sword_cursor', false);
+    const highlightMode = GM_getValue('highlight_mode', 'solid');
+    const solidColor = GM_getValue('highlight_color', '#c80000');
+    const radialColor = GM_getValue('radial_color', '#ff0000');
+    let neonColor = GM_getValue('neon_custom_color', '#ff0000');
+    const useColorW = GM_getValue('use_color_w', false);
+    const useColorB = GM_getValue('use_color_b', false);
+    const colorW = GM_getValue('white_piece_color', '#ff0000');
+    const colorB = GM_getValue('black_piece_color', '#ff0000');
+    let historyExpanded = false;
+    let videoHistoryExpanded = false;
+
+    let arrowStaticColor = GM_getValue('arrow_static_color', '#ff0000');
+    let arrowThickActive = GM_getValue('arrow_thick_active', false);
+    let arrowThickness = GM_getValue('arrow_thickness', 50);
+
+    // Variáveis do Gradiente Triplo
+    let arrowGradActive = GM_getValue('arrow_grad_active', false);
+    let hGradActive = GM_getValue('h_grad_active', false);
+    let wGradActive = GM_getValue('w_grad_active', false);
+    let bGradActive = GM_getValue('b_grad_active', false);
+
+    const getThicknessValue = (val) => {
+        if (val <= 50) return Math.max(0.01, (val / 50) * 0.1);
+        return 0.1 + ((val - 50) / 50) * 0.7;
+    };
+
+    const hexToRgb = (hex) => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '255, 0, 0';
+    };
+
+    const rgbToHex = (r, g, b) => "#" + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+
+    const getGridSVG = (opacity, color = initialGridColor) => {
+        const activeColor = GM_getValue('black_grid_active', true) ? '#000000' : color;
+        const content = Array.from({length: 64}, (_, i) => {
+            const x = (i % 8), y = Math.floor(i / 8);
+            return (x + y) % 2 !== 0 ? `<rect x='${x * 100}' y='${y * 100}' width='100' height='100' fill='${activeColor}' opacity='${opacity}'/>` : '';
+        }).join('');
+        return `url("data:image/svg+xml;base64,${btoa(`<svg xmlns='http://www.w3.org/2000/svg' width='800' height='800' viewBox='0 0 800 800'>${content}</svg>`)}")`;
+    };
+
+    let boardImg = GM_getValue('chess_board_data', FACTORY_IMAGES[0]);
+
+    // Função Suprema de Update de Gradiente em Peças
+    const updatePieceGradients = () => {
+        const getSvgDataUrl = (c1, c2, c3) => {
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${c1}"/><stop offset="50%" stop-color="${c2}"/><stop offset="100%" stop-color="${c3}"/></linearGradient></defs><rect width="100" height="100" fill="url(#g)"/></svg>`;
+            return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+        };
+        const fw = document.getElementById('fe-img-w');
+        if (fw) fw.setAttribute('href', getSvgDataUrl(GM_getValue('w_c1', '#ffffff'), GM_getValue('w_c2', '#dddddd'), GM_getValue('w_c3', '#aaaaaa')));
+        const fb = document.getElementById('fe-img-b');
+        if (fb) fb.setAttribute('href', getSvgDataUrl(GM_getValue('b_c1', '#555555'), GM_getValue('b_c2', '#333333'), GM_getValue('b_c3', '#111111')));
+    };
+
+    // ===== ACELERAÇÃO DE HARDWARE E CSS BASE =====
+    GM_addStyle(`
+        :root {
+            --custom-board-img: ${useBgImage ? `url("${boardImg}")` : 'initial'};
+            --board-grid-svg: ${useBgImage || cachedBgVideoActive ? getGridSVG(initialOpacity, initialGridColor) : 'none'};
+            --solid-rgb: ${hexToRgb(solidColor)};
+            --radial-rgb: ${hexToRgb(radialColor)};
+            --highlight-active: ${useHighlight ? '1' : '0'};
+            --custom-arrow-color: ${arrowStaticColor};
+            --custom-arrow-thickness: ${arrowThickActive ? getThicknessValue(arrowThickness) : '0.1'};
+            --custom-neon-rgb: ${hexToRgb(neonColor)};
+            --titanium-rook-url: url("${TITANIUM_ROOK_IMG}");
+            --titanium-knight-url: url("${TITANIUM_KNIGHT_IMG}");
+            --titanium-bishop-url: url("${TITANIUM_BISHOP_IMG}");
+            --titanium-king-url: url("${TITANIUM_KING_IMG}");
+            --titanium-queen-url: url("${TITANIUM_QUEEN_IMG}");
+            --titanium-pawn-url: url("${TITANIUM_PAWN_IMG}");
+            --titanium-br-url: url("${TITANIUM_BLACK_ROOK_IMG}");
+            --titanium-bn-url: url("${TITANIUM_BLACK_KNIGHT_IMG}");
+            --titanium-bb-url: url("${TITANIUM_BLACK_BISHOP_IMG}");
+            --titanium-bk-url: url("${TITANIUM_BLACK_KING_IMG}");
+            --titanium-bq-url: url("${TITANIUM_BLACK_QUEEN_IMG}");
+            --titanium-bp-url: url("${TITANIUM_BLACK_PAWN_IMG}");
+            --arr-c1: ${GM_getValue('arrow_c1', '#ff0000')};
+            --arr-c2: ${GM_getValue('arrow_c2', '#ffff00')};
+            --arr-c3: ${GM_getValue('arrow_c3', '#00ff00')};
+            --h-c1: ${GM_getValue('h_c1', '#ff0000')};
+            --h-c2: ${GM_getValue('h_c2', '#ffff00')};
+            --h-c3: ${GM_getValue('h_c3', '#00ff00')};
+            --h-c1-rgb: ${hexToRgb(GM_getValue('h_c1', '#ff0000'))};
+            --h-c2-rgb: ${hexToRgb(GM_getValue('h_c2', '#ffff00'))};
+            --h-c3-rgb: ${hexToRgb(GM_getValue('h_c3', '#00ff00'))};
+        }
+
+        html[data-sword="true"], html[data-sword="true"] * { cursor: url("${SWORD_CURSOR}"), auto !important; }
+
+        .piece, .ghost-piece, [class*="piece"], .dragging {
+            z-index: 10 !important;
+            will-change: transform;
+            transform: translateZ(0);
+        }
+
+        .promotion-window, [class*="promotion-window"] { z-index: 999998 !important; }
+        .promotion-piece, [class*="promotion-piece"] { z-index: 999999 !important; pointer-events: auto !important; transform: none !important; will-change: auto !important; }
+
+        .captured-pieces, [class*="captured-pieces"], [class*="capturedPieces"] { background-image: none !important; filter: none !important; }
+        .captured-pieces .piece, [class*="captured-pieces"] .piece { background-image: initial !important; background-size: contain !important; filter: none !important; }
+
+        #chess-uploader-ui {
+            position: fixed !important;
+            top: 10px !important; right: 10px !important; z-index: 2147483647 !important;
+            background: #262421 !important; padding: 12px !important; border: 0.5px solid #81b64c !important;
+            border-radius: 4px !important; color: #fff !important; width: 230px !important;
+            max-height: 85vh !important; overflow-y: auto !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.6) !important; font-family: sans-serif; user-select: none;
+        }
+
+        #chess-uploader-ui.minimized { width: 34px !important; height: 34px !important; padding: 0 !important; border-radius: 50% !important; display: flex !important; align-items: center !important; justify-content: center !important; overflow: hidden !important; }
+        #chess-uploader-ui.minimized > *:not(#gui-toggle) { display: none !important; }
+
+        html[data-bg-active="true"] .board-layout-main .board, html[data-bg-active="true"] .board-layout-main chess-board, html[data-bg-active="true"] .board-layout-main [class*="board-component"], html[data-bg-active="true"] #board-layout-main .board, html[data-bg-active="true"] [id*="section-board"] .board, html[data-bg-active="true"] [class*="chess-board"] {
+            position: relative !important;
+            background-image: var(--custom-board-img) !important; background-size: 100% 100% !important; background-repeat: no-repeat !important; background-position: center center !important;
+        }
+
+        html[data-bg-video="true"] .board-layout-main .board, html[data-bg-video="true"] .board-layout-main chess-board, html[data-bg-video="true"] [class*="chess-board"] {
+            background-image: none !important;
+            background-color: transparent !important; isolation: isolate !important;
+        }
+
+        html[data-bg-active="true"] .board-layout-main .board::after, html[data-bg-active="true"] .board-layout-main chess-board::after, html[data-bg-active="true"] .board-layout-main [class*="board-component"]::after, html[data-bg-active="true"] [class*="chess-board"]::after, html[data-bg-video="true"] .board-layout-main .board::after, html[data-bg-video="true"] .board-layout-main chess-board::after, html[data-bg-video="true"] [class*="chess-board"]::after {
+            content: "" !important;
+            position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; background-image: var(--board-grid-svg) !important;
+            background-size: 100% 100% !important; pointer-events: none !important; z-index: 2 !important;
+        }
+
+        html[data-titanium="true"] .piece:not([class*="captured"]), html[data-titanium="true"] [class*="piece"]:not([class*="captured"]) { background-size: 70% !important; background-repeat: no-repeat !important; background-position: center !important; contain: strict !important; }
+        html[data-titanium="true"] .piece.wp:not([class*="captured"]), html[data-titanium="true"] [class*="piece"][class*="wp"]:not([class*="captured"]) { background-image: var(--titanium-pawn-url) !important; background-size: 60% !important; }
+        html[data-titanium="true"] .piece.bp:not([class*="captured"]), html[data-titanium="true"] [class*="piece"][class*="bp"]:not([class*="captured"]) { background-image: var(--titanium-bp-url) !important; background-size: 60% !important; }
+        html[data-titanium="true"] .piece.wr:not([class*="captured"]), html[data-titanium="true"] [class*="piece"][class*="wr"]:not([class*="captured"]) { background-image: var(--titanium-rook-url) !important; background-size: 60% !important; }
+        html[data-titanium="true"] .piece.br:not([class*="captured"]), html[data-titanium="true"] [class*="piece"][class*="br"]:not([class*="captured"]) { background-image: var(--titanium-br-url) !important; background-size: 60% !important; }
+        html[data-titanium="true"] .piece.wk:not([class*="captured"]), html[data-titanium="true"] [class*="piece"][class*="wk"]:not([class*="captured"]) { background-image: var(--titanium-king-url) !important; background-size: 78% !important; }
+        html[data-titanium="true"] .piece.wq:not([class*="captured"]), html[data-titanium="true"] [class*="piece"][class*="wq"]:not([class*="captured"]) { background-image: var(--titanium-queen-url) !important; background-size: 78% !important; }
+        html[data-titanium="true"] .piece.bk:not([class*="captured"]), html[data-titanium="true"] [class*="piece"][class*="bk"]:not([class*="captured"]) { background-image: var(--titanium-bk-url) !important; background-size: 78% !important; }
+        html[data-titanium="true"] .piece.bq:not([class*="captured"]), html[data-titanium="true"] [class*="piece"][class*="bq"]:not([class*="captured"]) { background-image: var(--titanium-bq-url) !important; background-size: 84% !important; }
+        html[data-titanium="true"] .piece.wn:not([class*="captured"]), html[data-titanium="true"] [class*="piece"][class*="wn"]:not([class*="captured"]) { background-image: var(--titanium-knight-url) !important; }
+        html[data-titanium="true"] .piece.wb:not([class*="captured"]), html[data-titanium="true"] [class*="piece"][class*="wb"]:not([class*="captured"]) { background-image: var(--titanium-bishop-url) !important; background-size: 74% !important; }
+        html[data-titanium="true"] .piece.bn:not([class*="captured"]), html[data-titanium="true"] [class*="piece"][class*="bn"]:not([class*="captured"]) { background-image: var(--titanium-bn-url) !important; }
+        html[data-titanium="true"] .piece.bb:not([class*="captured"]), html[data-titanium="true"] [class*="piece"][class*="bb"]:not([class*="captured"]) { background-image: var(--titanium-bb-url) !important; background-size: 74% !important; }
+
+        html[data-color-w="true"]:not([data-w-grad="true"]) .piece.wp:not([class*="captured"]), html[data-color-w="true"]:not([data-w-grad="true"]) .piece.wn:not([class*="captured"]), html[data-color-w="true"]:not([data-w-grad="true"]) .piece.wb:not([class*="captured"]), html[data-color-w="true"]:not([data-w-grad="true"]) .piece.wr:not([class*="captured"]), html[data-color-w="true"]:not([data-w-grad="true"]) .piece.wq:not([class*="captured"]), html[data-color-w="true"]:not([data-w-grad="true"]) .piece.wk:not([class*="captured"]), html[data-color-w="true"]:not([data-w-grad="true"]) [class*="piece"][class*="wp"]:not([class*="captured"]), html[data-color-w="true"]:not([data-w-grad="true"]) [class*="piece"][class*="wn"]:not([class*="captured"]), html[data-color-w="true"]:not([data-w-grad="true"]) [class*="piece"][class*="wb"]:not([class*="captured"]), html[data-color-w="true"]:not([data-w-grad="true"]) [class*="piece"][class*="wr"]:not([class*="captured"]), html[data-color-w="true"]:not([data-w-grad="true"]) [class*="piece"][class*="wq"]:not([class*="captured"]), html[data-color-w="true"]:not([data-w-grad="true"]) [class*="piece"][class*="wk"]:not([class*="captured"]) { filter: url(#tint-white-pieces) !important; }
+        html[data-color-b="true"]:not([data-b-grad="true"]) .piece.bp:not([class*="captured"]), html[data-color-b="true"]:not([data-b-grad="true"]) .piece.bn:not([class*="captured"]), html[data-color-b="true"]:not([data-b-grad="true"]) .piece.bb:not([class*="captured"]), html[data-color-b="true"]:not([data-b-grad="true"]) .piece.br:not([class*="captured"]), html[data-color-b="true"]:not([data-b-grad="true"]) .piece.bq:not([class*="captured"]), html[data-color-b="true"]:not([data-b-grad="true"]) .piece.bk:not([class*="captured"]), html[data-color-b="true"]:not([data-b-grad="true"]) [class*="piece"][class*="bp"]:not([class*="captured"]), html[data-color-b="true"]:not([data-b-grad="true"]) [class*="piece"][class*="bn"]:not([class*="captured"]), html[data-color-b="true"]:not([data-b-grad="true"]) [class*="piece"][class*="bb"]:not([class*="captured"]), html[data-color-b="true"]:not([data-b-grad="true"]) [class*="piece"][class*="br"]:not([class*="captured"]), html[data-color-b="true"]:not([data-b-grad="true"]) [class*="piece"][class*="bq"]:not([class*="captured"]), html[data-color-b="true"]:not([data-b-grad="true"]) [class*="piece"][class*="bk"]:not([class*="captured"]) { filter: url(#tint-black-pieces) !important; }
+
+        html[data-color-w="true"][data-w-grad="true"] .piece.wp:not([class*="captured"]), html[data-color-w="true"][data-w-grad="true"] .piece.wn:not([class*="captured"]), html[data-color-w="true"][data-w-grad="true"] .piece.wb:not([class*="captured"]), html[data-color-w="true"][data-w-grad="true"] .piece.wr:not([class*="captured"]), html[data-color-w="true"][data-w-grad="true"] .piece.wq:not([class*="captured"]), html[data-color-w="true"][data-w-grad="true"] .piece.wk:not([class*="captured"]), html[data-color-w="true"][data-w-grad="true"] [class*="piece"][class*="wp"]:not([class*="captured"]), html[data-color-w="true"][data-w-grad="true"] [class*="piece"][class*="wn"]:not([class*="captured"]), html[data-color-w="true"][data-w-grad="true"] [class*="piece"][class*="wb"]:not([class*="captured"]), html[data-color-w="true"][data-w-grad="true"] [class*="piece"][class*="wr"]:not([class*="captured"]), html[data-color-w="true"][data-w-grad="true"] [class*="piece"][class*="wq"]:not([class*="captured"]), html[data-color-w="true"][data-w-grad="true"] [class*="piece"][class*="wk"]:not([class*="captured"]) { filter: url(#grad-filter-white) !important; }
+
+        html[data-color-b="true"][data-b-grad="true"] .piece.bp:not([class*="captured"]), html[data-color-b="true"][data-b-grad="true"] .piece.bn:not([class*="captured"]), html[data-color-b="true"][data-b-grad="true"] .piece.bb:not([class*="captured"]), html[data-color-b="true"][data-b-grad="true"] .piece.br:not([class*="captured"]), html[data-color-b="true"][data-b-grad="true"] .piece.bq:not([class*="captured"]), html[data-color-b="true"][data-b-grad="true"] .piece.bk:not([class*="captured"]), html[data-color-b="true"][data-b-grad="true"] [class*="piece"][class*="bp"]:not([class*="captured"]), html[data-color-b="true"][data-b-grad="true"] [class*="piece"][class*="bn"]:not([class*="captured"]), html[data-color-b="true"][data-b-grad="true"] [class*="piece"][class*="bb"]:not([class*="captured"]), html[data-color-b="true"][data-b-grad="true"] [class*="piece"][class*="br"]:not([class*="captured"]), html[data-color-b="true"][data-b-grad="true"] [class*="piece"][class*="bq"]:not([class*="captured"]), html[data-color-b="true"][data-b-grad="true"] [class*="piece"][class*="bk"]:not([class*="captured"]) { filter: url(#grad-filter-black) !important; }
+
+        .highlight, .selection-square { opacity: var(--highlight-active) !important; z-index: 2 !important; }
+
+        html[data-mode="solid"]:not([data-h-grad="true"]) .highlight, html[data-mode="solid"]:not([data-h-grad="true"]) .selection-square { background-color: rgba(var(--solid-rgb), 0.8) !important; background-image: none !important; }
+        html[data-mode="radial"]:not([data-h-grad="true"]) .highlight, html[data-mode="radial"]:not([data-h-grad="true"]) .selection-square { background-color: transparent !important; background-image: radial-gradient(circle, rgba(var(--radial-rgb), 1) 0%, rgba(var(--radial-rgb), 0.4) 50%, rgba(var(--radial-rgb), 0) 85%) !important; }
+
+        html[data-mode="solid"][data-h-grad="true"] .highlight, html[data-mode="solid"][data-h-grad="true"] .selection-square { background-image: linear-gradient(135deg, var(--h-c1), var(--h-c2), var(--h-c3)) !important; background-color: transparent !important; opacity: 0.85 !important; }
+        html[data-mode="radial"][data-h-grad="true"] .highlight, html[data-mode="radial"][data-h-grad="true"] .selection-square { background-image: radial-gradient(circle, rgba(var(--h-c1-rgb), 1) 0%, rgba(var(--h-c2-rgb), 0.4) 50%, rgba(var(--h-c3-rgb), 0) 85%) !important; background-color: transparent !important; opacity: 1 !important; }
+
+        .neon-glow { width: 85px; height: 85px; position: fixed; pointer-events: none; border-radius: 50%; background: radial-gradient(circle, rgba(var(--custom-neon-rgb), 0.55) 0%, rgba(var(--custom-neon-rgb), 0.35) 20%, rgba(var(--custom-neon-rgb), 0.18) 40%, rgba(var(--custom-neon-rgb), 0.08) 60%, rgba(var(--custom-neon-rgb), 0.0) 75%); filter: blur(10px); z-index: 999999; display: none; will-change: transform; transform: translateZ(0); backface-visibility: hidden; left: 0; top: 0; }
+        html[data-neon="true"] .neon-glow { display: block; }
+        html[data-curlock="true"]:not([data-sword="true"]) .board, html[data-curlock="true"]:not([data-sword="true"]) .board *, html[data-curlock="true"]:not([data-sword="true"]) .piece, html[data-curlock="true"]:not([data-sword="true"]) .piece *, html[data-curlock="true"]:not([data-sword="true"]) canvas { cursor: default !important; }
+
+        .ui-section { margin-top: 6px; border-top: 0.5px solid #444; padding-top: 6px; }
+        .control-group { font-size: 10px; display: flex; flex-direction: column; margin-bottom: 4px; gap: 3px; }
+        .wheel-trigger { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 0.5px solid #fff; cursor: pointer; vertical-align: middle; margin-left: 4px; background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red); }
+        .wheel-container { display: none; margin: 5px auto; width: 120px; height: 120px; position: relative; }
+        .wheel-container.active { display: block; }
+        canvas.color-wheel { border-radius: 50%; cursor: crosshair; display: block; width: 120px; height: 120px; }
+        .color-preview { display: inline-block; width: 10px; height: 10px; border: 0.5px solid #fff; border-radius: 2px; vertical-align: middle; margin-left: 4px; }
+        .wheel-cursor { position: absolute; width: 5px; height: 5px; border: 0.5px solid white; border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%); background: transparent; display: block; z-index: 5; }
+
+        #board-history-container, #video-history-container { margin-top: 6px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; max-height: 160px; overflow-y: auto; padding-right: 2px; }
+        .history-item-container { position: relative; width: 100%; padding-bottom: 100%; background: #111; border-radius: 2px; overflow: hidden; border: 0.5px solid #555; display: block; box-sizing: border-box; }
+        .history-item { position: absolute; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; background-size: cover; cursor: pointer; background-position: center; background-repeat: no-repeat; }
+        .delete-btn { position: absolute; top: 1px; right: 1px; background: rgba(255,0,0,0.9); color: white; width: 11px; height: 11px; border-radius: 50%; font-size: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 11; border: 0.5px solid #000; }
+        #show-more-history, #show-more-video-history { width: 100%; background: none; border: 0.5px solid #555; color: #aaa; font-size: 9px; margin-top: 4px; padding: 2px; cursor: pointer; border-radius: 3px; }
+
+        svg[class*="arrows"], [id*="chess-board-arrows"], .arrows-container { z-index: 2147483647 !important; pointer-events: none; will-change: transform, opacity !important; }
+        svg[class*="arrows"] g path, svg[class*="arrows"] path, .arrow, [id*="arrow"] path { stroke: var(--custom-arrow-color) !important; fill: var(--custom-arrow-color) !important; opacity: 0.85 !important; stroke-width: var(--custom-arrow-thickness) !important; paint-order: stroke !important; }
+        marker[id*="arrowhead"] path { fill: var(--custom-arrow-color) !important; stroke: none !important; }
+
+        html[data-arrow-grad="true"] svg[class*="arrows"] g path, html[data-arrow-grad="true"] svg[class*="arrows"] path, html[data-arrow-grad="true"] .arrow, html[data-arrow-grad="true"] [id*="arrow"] path { stroke: url(#grad-arrows) !important; fill: url(#grad-arrows) !important; }
+        html[data-arrow-grad="true"] marker[id*="arrowhead"] path { fill: url(#grad-arrows) !important; }
+
+        .premium-box { background: rgba(129, 182, 76, 0.15) !important; border: 1px solid rgba(129, 182, 76, 0.5) !important; padding: 8px !important; border-radius: 8px !important; margin: 5px 0 !important; display: block !important; }
+        .rgb-inline-label { display: none !important; }
+        .black-color-box { display: inline-flex; align-items: center; gap: 2px; font-size: 8px; font-weight: bold; margin-left: 6px; vertical-align: middle; cursor: pointer; color: #aaa; }
+        .black-color-box input { margin: 0; width: 10px; height: 10px; cursor: pointer; }
+
+        .floating-note { position: fixed; z-index: 2147483646; border-radius: 16px; background-color: rgba(30, 30, 30, 0.85); background-size: cover; background-position: center; box-shadow: 0 8px 32px rgba(0,0,0,0.5); display: flex; flex-direction: column; resize: both; overflow: hidden; min-width: 200px; min-height: 150px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .floating-note.transparent-mode { background-color: transparent !important; backdrop-filter: none !important; box-shadow: none !important; border: 1px dashed rgba(255,255,255,0.2) !important; }
+        .floating-note.transparent-mode .note-header { background: rgba(0,0,0,0.3) !important; }
+        .floating-note.transparent-mode .note-textarea { background: transparent !important; }
+
+        .note-header { height: 28px; background: rgba(0,0,0,0.6); cursor: grab; display: flex; align-items: center; padding: 0 8px; gap: 4px; user-select: none; border-top-left-radius: 16px; border-top-right-radius: 16px; }
+        .note-header:active { cursor: grabbing; }
+        .note-header input, .note-header select { height: 18px; font-size: 10px; background: #222; color: #fff; border: 1px solid #444; border-radius: 3px; outline: none; }
+        .note-header input[type="color"] { padding: 0; width: 20px; cursor: pointer; border: none; }
+        .note-textarea { flex: 1; background: rgba(0,0,0,0.1); border: none; padding: 12px; font-size: 14px; resize: none; outline: none; width: 100%; box-sizing: border-box; color: #fff; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; }
+
+        .inline-floating-img { position: absolute; z-index: 10; border-radius: 20px; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 8px 32px rgba(0,0,0,0.5); resize: both; overflow: hidden; background-size: cover; background-position: center; cursor: grab; user-select: none; }
+        .inline-floating-img:active { cursor: grabbing; }
+        .inline-img-delete { position: absolute; top: 6px; right: 6px; background: rgba(200,0,0,0.8); color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 10px; text-align: center; line-height: 16px; cursor: pointer; border: none; z-index: 11; font-weight: bold; }
+    `);
+
+    const applyArrowColor = (color) => { document.documentElement.style.setProperty('--custom-arrow-color', color); };
+    const applyHighlightRGB = (rgbStr) => { document.documentElement.style.setProperty('--solid-rgb', rgbStr); document.documentElement.style.setProperty('--radial-rgb', rgbStr); };
+    const applyNeonRGB = (rgbStr) => { document.documentElement.style.setProperty('--custom-neon-rgb', rgbStr); };
+
+    const updateBoardStyle = (data) => {
+        const active = GM_getValue('use_bg_image', true);
+        document.documentElement.setAttribute('data-bg-active', active);
+        document.documentElement.style.setProperty('--custom-board-img', (active && data) ? `url("${data}")` : 'initial');
+        document.documentElement.style.setProperty('--board-grid-svg', (active || cachedBgVideoActive) ? getGridSVG(GM_getValue('dark_squares_opacity', 0.2), GM_getValue('dark_squares_color', '#000000')) : 'none');
+    };
+
+    const fixGitHubUrl = (url) => {
+        if (url && url.includes("github.com") && url.includes("/blob/")) {
+            return url.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/");
+        }
+        return url;
+    };
+
+    const getVideoHash = (str) => {
+        if (!str) return "0";
+        let hash = 0;
+        for (let i = 0; i < str.length && i < 1000; i++) {
+            hash = (hash << 5) - hash + str.charCodeAt(i);
+            hash |= 0;
+        }
+        return hash + "_" + str.length;
+    };
+
+    let isVideoEnsuring = false;
+    const ensureVideoExists = async () => {
+        if (isVideoEnsuring) return;
+        isVideoEnsuring = true;
+
+        const active = cachedBgVideoActive;
+        document.documentElement.setAttribute('data-bg-video', active ? "true" : "false");
+        if (!active) {
+            document.querySelectorAll('.custom-chess-bg-video').forEach(el => el.style.display = 'none');
+            isVideoEnsuring = false;
+            return;
+        }
+
+        let activeVideo = cachedVideoData;
+        if (!activeVideo) {
+            isVideoEnsuring = false;
+            return;
+        }
+
+        if (activeVideo.startsWith("LOCAL_DB_VIDEO")) {
+            const b64 = await getLocalVideoURL(activeVideo);
+            if (!b64) {
+                isVideoEnsuring = false;
+                return;
+            }
+            activeVideo = b64;
+        } else {
+            activeVideo = fixGitHubUrl(activeVideo);
+        }
+
+        const currentHash = getVideoHash(cachedVideoData);
+        const boards = document.querySelectorAll('.board, chess-board, [class*="chess-board"]');
+        boards.forEach(board => {
+            if (getComputedStyle(board).position === 'static') {
+                board.style.position = 'relative';
+            }
+
+            let vid = board.querySelector('.custom-chess-bg-video');
+            if (!vid) {
+                vid = document.createElement('video');
+                vid.className = 'custom-chess-bg-video';
+                vid.style.cssText = 'position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; object-fit: cover !important; z-index: 0 !important; pointer-events: none !important; border-radius: inherit; display: block !important; transform: translateZ(0) !important; will-change: transform !important;';
+                vid.loop = true;
+                vid.playsInline = true;
+                vid.autoplay = true;
+                board.insertBefore(vid, board.firstChild);
+            }
+            vid.style.display = 'block';
+            if (vid.dataset.vHash !== currentHash) {
+                 vid.setAttribute('src', activeVideo);
+                 vid.dataset.vHash = currentHash;
+                 vid.load();
+                 vid.play().catch(()=>{});
+            } else if (vid.paused) {
+                 vid.play().catch(()=>{});
+            }
+
+            vid.muted = !cachedVideoSound;
+            vid.volume = cachedVideoVolume;
+        });
+        isVideoEnsuring = false;
+    };
+
+    const pieceKeys = ["wp","wr","wn","wb","wq","wk", "bp","br","bn","bb","bq","bk"];
+    const pieceNames = { wp:"Peão Branco", wr:"Torre Branca", wn:"Cavalo Branco", wb:"Bispo Branco", wq:"Dama Branca", wk:"Rei Branco", bp:"Peão Preto", br:"Torre Preta", bn:"Cavalo Preto", bb:"Bispo Preto", bq:"Dama Preta", bk:"Rei Preto" };
+    let customPiecesStyle = document.createElement('style');
+    customPiecesStyle.id = 'chess-custom-pieces-style';
+    document.head.appendChild(customPiecesStyle);
+
+    const pieceSettingsCache = {};
+    pieceKeys.forEach(k => {
+        pieceSettingsCache[k] = { img: GM_getValue("piece_" + k, null), scale: GM_getValue("piece_scale_" + k, 80), x: GM_getValue("piece_x_" + k, 50), y: GM_getValue("piece_y_" + k, 50) };
+    });
+
+    const applyCustomPieces = () => {
+        if (GM_getValue('use_titanium_pieces', false)) {
+            if (customPiecesStyle.textContent !== '') customPiecesStyle.textContent = '';
+            return;
+        }
+
+        let newCSS = '';
+        pieceKeys.forEach(k => {
+            const conf = pieceSettingsCache[k];
+            if (conf.img) {
+                newCSS += `.piece.${k}, [class*="piece"][class*="${k}"] { background-image: url("${conf.img}") !important; background-size: ${conf.scale}% !important; background-repeat: no-repeat !important; background-position: ${conf.x}% ${conf.y}% !important; }`;
+            }
+         });
+        if (customPiecesStyle.textContent !== newCSS) customPiecesStyle.textContent = newCSS;
+    };
+
+    const updatePieceCache = (k, attr, val) => {
+        pieceSettingsCache[k][attr] = val;
+        applyCustomPieces();
+    };
+
+    const createPieceUI = () => {
+        if (document.getElementById('piece-selector')) return;
+        const container = document.createElement('div');
+        container.className = "ui-section";
+        const optionsHtml = pieceKeys.map(k => `<option value="${k}">${pieceNames[k]}</option>`).join('');
+        container.innerHTML = ttPolicy.createHTML(`
+            <div style="font-size:9px;font-weight:bold;color:#81b64c;margin-bottom:4px;">♟️ Peças Custom</div>
+            <select id="piece-selector" style="width:100%; font-size:9px; margin-bottom:6px; background:#262421; color:#fff; border:1px solid #555; padding: 2px;">${optionsHtml}</select>
+            <div style="font-size:8px; margin-bottom:2px; display:flex; justify-content:space-between;"><span>Adicionar Imagem:</span><a href="https://clippingmagic.com/" target="_blank" style="color:#3498db; text-decoration:none; font-weight:bold;">Recortar Imagem</a></div>
+            <input type="file" id="piece-upload-single" accept="image/*" style="width:100%;font-size:7px;margin-bottom:6px;">
+            <div style="font-size:8px; display:flex; justify-content:space-between;"><span>Tamanho:</span> <span id="val-scale">80%</span></div>
+            <input type="range" id="piece-scale-single" min="10" max="200" value="80" style="width:100%; margin-bottom:4px;">
+            <div style="font-size:8px; display:flex; justify-content:space-between;"><span>Posição Horizontal (X):</span> <span id="val-x">50%</span></div>
+            <input type="range" id="piece-x-single" min="-100" max="200" value="50" style="width:100%; margin-bottom:4px;">
+            <div style="font-size:8px; display:flex; justify-content:space-between;"><span>Posição Vertical (Y):</span> <span id="val-y">50%</span></div>
+            <input type="range" id="piece-y-single" min="-100" max="200" value="50" style="width:100%; margin-bottom:6px;">
+            <button id="reset-single-piece" style="width:100%;margin-bottom:4px;font-size:8px;background:#b38a2e;color:#fff;border:none;border-radius:3px;cursor:pointer;padding:4px;">Resetar Peça Selecionada</button>
+            <button id="reset-pieces" style="width:100%;font-size:8px;background:#400;color:#fff;border:none;border-radius:3px;cursor:pointer;padding:4px;">Resetar Todas as Peças</button>
+        `);
+        document.querySelector("#chess-uploader-ui").appendChild(container);
+
+        const selector = document.getElementById("piece-selector");
+        const uploader = document.getElementById("piece-upload-single");
+        const scaleRange = document.getElementById("piece-scale-single");
+        const xRange = document.getElementById("piece-x-single");
+        const yRange = document.getElementById("piece-y-single");
+        const valScale = document.getElementById("val-scale");
+        const valX = document.getElementById("val-x");
+        const valY = document.getElementById("val-y");
+
+        const loadPieceData = () => {
+            const k = selector.value;
+            const s = pieceSettingsCache[k].scale;
+            const x = pieceSettingsCache[k].x;
+            const y = pieceSettingsCache[k].y;
+            scaleRange.value = s; valScale.innerText = s + "%";
+            xRange.value = x; valX.innerText = x + "%";
+            yRange.value = y; valY.innerText = y + "%";
+        };
+
+        loadPieceData();
+        selector.onchange = () => { loadPieceData(); };
+
+        uploader.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const k = selector.value;
+                safeSetValue("piece_" + k, ev.target.result);
+                updatePieceCache(k, 'img', ev.target.result);
+            };
+            reader.readAsDataURL(file);
+            uploader.value = "";
+        };
+
+        const updateParams = () => {
+            const k = selector.value;
+            safeSetValue("piece_scale_" + k, scaleRange.value);
+            safeSetValue("piece_x_" + k, xRange.value);
+            safeSetValue("piece_y_" + k, yRange.value);
+            valScale.innerText = scaleRange.value + "%";
+            valX.innerText = xRange.value + "%";
+            valY.innerText = yRange.value + "%";
+            updatePieceCache(k, 'scale', scaleRange.value);
+            updatePieceCache(k, 'x', xRange.value);
+            updatePieceCache(k, 'y', yRange.value);
+        };
+        scaleRange.oninput = updateParams; xRange.oninput = updateParams; yRange.oninput = updateParams;
+
+        document.getElementById("reset-single-piece").onclick = () => {
+            const k = selector.value;
+            safeSetValue("piece_" + k, null); safeSetValue("piece_scale_" + k, 80); safeSetValue("piece_x_" + k, 50); safeSetValue("piece_y_" + k, 50);
+            pieceSettingsCache[k] = { img: null, scale: 80, x: 50, y: 50 };
+            loadPieceData(); applyCustomPieces();
+        };
+
+        document.getElementById("reset-pieces").onclick = () => {
+            pieceKeys.forEach(k => {
+                safeSetValue("piece_" + k, null); safeSetValue("piece_scale_" + k, 80); safeSetValue("piece_x_" + k, 50); safeSetValue("piece_y_" + k, 50);
+                pieceSettingsCache[k] = { img: null, scale: 80, x: 50, y: 50 };
+            });
+            loadPieceData(); applyCustomPieces();
+        };
+    };
+
+    let notesData = safeParseJSON(GM_getValue('chess_notes_data', '[]'), []);
+    let noteTimeout;
+    const saveNotesDebounced = () => { clearTimeout(noteTimeout); noteTimeout = setTimeout(() => { safeSetValue('chess_notes_data', JSON.stringify(notesData)); }, 500); };
+
+    let customNotesFontsStyle = document.createElement('style');
+    customNotesFontsStyle.id = 'chess-notes-fonts-style';
+    document.head.appendChild(customNotesFontsStyle);
+
+    const updateCustomNotesFonts = () => {
+        let css = '';
+        notesData.forEach(n => { if (n.customFont) css += `@font-face { font-family: 'CustomFont_${n.id}'; src: url('${n.customFont}'); }\n`; });
+        if (customNotesFontsStyle.textContent !== css) customNotesFontsStyle.textContent = css;
+    };
+
+    let dragData = { active: false, note: null, el: null, startX: 0, startY: 0, initX: 0, initY: 0 };
+    document.addEventListener('mousemove', e => {
+        if (!dragData.active) return;
+        dragData.note.x = dragData.initX + (e.clientX - dragData.startX);
+        dragData.note.y = dragData.initY + (e.clientY - dragData.startY);
+        dragData.el.style.left = dragData.note.x + 'px';
+        dragData.el.style.top = dragData.note.y + 'px';
+    });
+    document.addEventListener('mouseup', () => { if (dragData.active) { dragData.active = false; saveNotesDebounced(); } });
+
+    const updateNotesGalleryUI = () => {
+        const gal = document.getElementById('notes-gallery-ui');
+        if (!gal) return;
+        let html = '';
+        notesData.forEach(note => {
+            let previewText = note.text ? note.text.substring(0, 20) + (note.text.length > 20 ? '...' : '') : 'Nota Vazia';
+            html += `<div style="display:flex; justify-content:space-between; align-items:center; background:#222; padding:4px; border-radius:2px; font-size:9px; border:0.5px solid #555; gap: 4px;">
+                <span style="color:${note.color}; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; flex-grow: 1;" title="${note.text}">${previewText}</span>
+                <button class="gallery-del-note" data-id="${note.id}" style="background:#c80000;color:white;border:none;border-radius:50%;width:14px;height:14px;font-size:8px;cursor:pointer;line-height:14px;text-align:center;padding:0; flex-shrink: 0;">✕</button>
+            </div>`;
+        });
+        gal.innerHTML = ttPolicy.createHTML(html);
+
+        gal.querySelectorAll('.gallery-del-note').forEach(btn => {
+            btn.onclick = () => {
+                const idToRemove = parseInt(btn.getAttribute('data-id'));
+                notesData = notesData.filter(n => n.id !== idToRemove);
+                saveNotesDebounced();
+                renderNotes();
+            };
+        });
+    };
+
+    const renderNotes = () => {
+        document.querySelectorAll('.floating-note').forEach(e => e.remove());
+        updateNotesGalleryUI();
+        if (!GM_getValue('show_notes', false)) return;
+
+        updateCustomNotesFonts();
+
+        notesData.forEach(note => {
+            const el = document.createElement('div');
+            el.className = 'floating-note';
+            if (note.isTransparent) el.classList.add('transparent-mode');
+            el.id = 'note-' + note.id;
+            el.style.left = note.x + 'px';
+            el.style.top = note.y + 'px';
+            el.style.width = note.w + 'px';
+            el.style.height = note.h + 'px';
+            if (note.bg) el.style.backgroundImage = `url('${note.bg}')`;
+
+            const fontName = note.customFont ? `'CustomFont_${note.id}', sans-serif` : note.font;
+
+            el.innerHTML = ttPolicy.createHTML(`
+                <div class="note-header">
+                    <input type="color" class="n-color" value="${note.color}" title="Cor da Letra">
+                    <input type="number" class="n-fontsize" value="${note.fontSize || 14}" title="Tamanho da Fonte" style="width: 36px; padding: 0 2px;" min="8" max="150">
+                    <select class="n-font" title="Fonte" style="width: 60px;">
+                        <option value="Arial" ${note.font==='Arial'?'selected':''}>Arial</option>
+                        <option value="Verdana" ${note.font==='Verdana'?'selected':''}>Verdana</option>
+                        <option value="'Times New Roman', serif" ${note.font==="'Times New Roman', serif"?'selected':''}>Serif</option>
+                        <option value="'Courier New', monospace" ${note.font==="'Courier New', monospace"?'selected':''}>Mono</option>
+                        <option value="Impact" ${note.font==='Impact'?'selected':''}>Impact</option>
+                        <option value="'Comic Sans MS'" ${note.font==="'Comic Sans MS'"?'selected':''}>Comic</option>
+                    </select>
+                    <label class="custom-file-btn" title="Subir Fonte Customizada do PC" style="background:#555;padding:2px 4px;border-radius:2px;cursor:pointer;">F+<input type="file" class="n-custom-font" accept=".ttf,.otf,.woff,.woff2" style="display:none"></label>
+                    <label class="custom-file-btn" title="Imagem de Fundo" style="background:#555;padding:2px 4px;border-radius:2px;cursor:pointer;">🖼️<input type="file" class="n-bg-img" accept="image/*" style="display:none"></label>
+                    <label class="custom-file-btn" title="Adicionar Imagem Pop-up Livre (Estilo iPhone 16)" style="background:#555;padding:2px 4px;border-radius:2px;cursor:pointer;">📸<input type="file" class="n-inline-img" accept="image/*" style="display:none"></label>
+                    <label class="custom-file-btn n-transparency-btn" title="Ativar/Desativar Fundo Transparente (Sem Blur)" style="background:${note.isTransparent ? '#81b64c' : '#555'};padding:2px 4px;border-radius:2px;cursor:pointer;margin-left:auto;">🫥</label>
+                    <button class="delete-note" style="background:#c80000;color:white;border:none;border-radius:50%;width:14px;height:14px;font-size:8px;cursor:pointer;line-height:14px;text-align:center;padding:0;margin-left:4px;">✕</button>
+                </div>
+                <textarea class="note-textarea" spellcheck="false" style="color: ${note.color}; font-family: ${fontName}; font-size: ${note.fontSize || 14}px;">${note.text}</textarea>
+            `);
+            document.body.appendChild(el);
+
+            el.querySelector('.n-transparency-btn').onclick = () => { note.isTransparent = !note.isTransparent; saveNotesDebounced(); renderNotes(); };
+
+            note.inlineImages = note.inlineImages || [];
+            note.inlineImages.forEach(imgData => {
+                const imgEl = document.createElement('div');
+                imgEl.className = 'inline-floating-img';
+                imgEl.style.backgroundImage = `url('${imgData.src}')`;
+                imgEl.style.left = imgData.x + 'px';
+                imgEl.style.top = imgData.y + 'px';
+                imgEl.style.width = imgData.w + 'px';
+                imgEl.style.height = imgData.h + 'px';
+
+                const delBtn = document.createElement('button');
+                delBtn.className = 'inline-img-delete';
+                delBtn.innerText = '✕';
+                delBtn.onclick = (e) => { e.stopPropagation(); note.inlineImages = note.inlineImages.filter(i => i.id !== imgData.id); saveNotesDebounced(); imgEl.remove(); };
+                imgEl.appendChild(delBtn);
+                el.appendChild(imgEl);
+
+                imgEl.onmousedown = (e) => {
+                    if (e.target === delBtn || (e.offsetX > imgEl.offsetWidth - 20 && e.offsetY > imgEl.offsetHeight - 20)) return;
+                    e.stopPropagation();
+                    let startX = e.clientX, startY = e.clientY, initX = imgEl.offsetLeft, initY = imgEl.offsetTop;
+                    const onMove = (ev) => { imgData.x = initX + (ev.clientX - startX); imgData.y = initY + (ev.clientY - startY); imgEl.style.left = imgData.x + 'px'; imgEl.style.top = imgData.y + 'px'; };
+                    const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); saveNotesDebounced(); };
+                    document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp);
+                };
+                const imgRo = new ResizeObserver(entries => { for (let entry of entries) { if (Math.abs(imgData.w - imgEl.offsetWidth) > 2 || Math.abs(imgData.h - imgEl.offsetHeight) > 2) { imgData.w = imgEl.offsetWidth; imgData.h = imgEl.offsetHeight; saveNotesDebounced(); } } });
+                imgRo.observe(imgEl);
+            });
+
+            const ta = el.querySelector('.note-textarea');
+            ta.oninput = (e) => { note.text = e.target.value; saveNotesDebounced(); updateNotesGalleryUI(); };
+            el.querySelector('.n-color').oninput = (e) => { note.color = e.target.value; ta.style.color = note.color; saveNotesDebounced(); };
+            el.querySelector('.n-fontsize').oninput = (e) => { note.fontSize = e.target.value; ta.style.fontSize = note.fontSize + 'px'; saveNotesDebounced(); };
+            el.querySelector('.n-font').onchange = (e) => { note.font = e.target.value; note.customFont = null; ta.style.fontFamily = note.font; updateCustomNotesFonts(); saveNotesDebounced(); };
+            el.querySelector('.n-custom-font').onchange = (e) => {
+                const file = e.target.files[0];
+                if(file) {
+                    const reader = new FileReader();
+                    reader.onload = ev => { note.customFont = ev.target.result; ta.style.fontFamily = `'CustomFont_${note.id}', sans-serif`; updateCustomNotesFonts(); saveNotesDebounced(); };
+                    reader.readAsDataURL(file);
+                }
+            };
+            el.querySelector('.n-bg-img').onchange = (e) => {
+                const file = e.target.files[0];
+                if(file) {
+                    const reader = new FileReader();
+                    reader.onload = ev => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            let w = img.width, h = img.height;
+                            if (w > 1200) { h *= 1200/w; w = 1200; }
+                            if (h > 1200) { w *= 1200/h; h = 1200; }
+                            canvas.width = w;
+                            canvas.height = h;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, w, h);
+                            note.bg = canvas.toDataURL('image/webp', 0.8);
+                            el.style.backgroundImage = `url('${note.bg}')`;
+                            saveNotesDebounced();
+                        };
+                        img.src = ev.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            el.querySelector('.n-inline-img').onchange = (e) => {
+                const file = e.target.files[0];
+                if(file) {
+                    const reader = new FileReader();
+                    reader.onload = ev => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            let w = img.width, h = img.height;
+                            if (w > 400) { h *= 400/w; w = 400; }
+                            if (h > 400) { w *= 400/h; h = 400; }
+                            canvas.width = w;
+                            canvas.height = h;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, w, h);
+                            const b64 = canvas.toDataURL('image/webp', 0.8);
+                            note.inlineImages = note.inlineImages || [];
+                            note.inlineImages.push({ id: Date.now(), src: b64, x: 20, y: 40, w: 120, h: Math.round(120 * (h/w)) });
+                            saveNotesDebounced(); renderNotes();
+                        };
+                        img.src = ev.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            el.querySelector('.delete-note').onclick = () => { notesData = notesData.filter(n => n.id !== note.id); saveNotesDebounced(); renderNotes(); };
+
+            const header = el.querySelector('.note-header');
+            header.onmousedown = (e) => {
+                if (['INPUT', 'SELECT', 'BUTTON', 'LABEL'].includes(e.target.tagName)) return;
+                dragData = { active: true, note: note, el: el, startX: e.clientX, startY: e.clientY, initX: el.offsetLeft, initY: el.offsetTop };
+                e.preventDefault();
+            };
+            const ro = new ResizeObserver(entries => {
+                for (let entry of entries) {
+                    if (Math.abs(note.w - el.offsetWidth) > 2 || Math.abs(note.h - el.offsetHeight) > 2) {
+                        note.w = el.offsetWidth; note.h = el.offsetHeight; saveNotesDebounced();
+                    }
+                }
+            });
+            ro.observe(el);
+        });
+        updateNotesGalleryUI();
+    };
+
+    const createNotesUI = () => {
+        if (document.getElementById('notes-ui-section')) return;
+        const container = document.createElement('div');
+        container.id = 'notes-ui-section';
+        container.className = "ui-section";
+        container.innerHTML = ttPolicy.createHTML(`
+            <div style="font-size:10px;font-weight:bold;margin-bottom:4px;color:#81b64c;">📝 Notas Flutuantes</div>
+            <label class="control-group" style="font-weight:bold; flex-direction:row; cursor:pointer;">
+                <input type="checkbox" id="toggle-notes" ${GM_getValue('show_notes', false) ? 'checked' : ''}> Mostrar Notas Salvas
+            </label>
+            <button id="add-note-btn" style="width:100%;margin-top:4px;font-size:10px;background:#3498db;color:#fff;border:none;border-radius:3px;cursor:pointer;padding:6px;">➕ Nova Nota</button>
+            <div id="notes-gallery-ui" style="margin-top:6px; display:flex; flex-direction:column; gap:4px; max-height:100px; overflow-y:auto; padding-right:2px;"></div>
+        `);
+        document.querySelector("#chess-uploader-ui").appendChild(container);
+
+        document.getElementById('toggle-notes').onchange = (e) => { safeSetValue('show_notes', e.target.checked); renderNotes(); };
+        document.getElementById('add-note-btn').onclick = () => {
+            const ww = window.innerWidth;
+            const startX = ww - 230 - 30 - 250;
+            notesData.push({ id: Date.now(), x: startX > 0 ? startX : 50, y: 50 + (notesData.length * 20), w: 250, h: 250, text: '', color: '#ffffff', fontSize: 14, bg: '', font: 'Arial', customFont: null, inlineImages: [], isTransparent: false });
+            saveNotesDebounced(); safeSetValue('show_notes', true); document.getElementById('toggle-notes').checked = true; renderNotes();
+        };
+        updateNotesGalleryUI();
+    };
+
+    let moveVideoObjectUrl = null;
+    const updateMoveHighlightMode = async () => {
+        const useVid = GM_getValue('use_move_video', false);
+        const useImg = GM_getValue('use_move_image', false);
+        if (useVid) {
+            const vidId = GM_getValue('move_highlight_video_data');
+            if (vidId) {
+                const url = await getLocalVideoURL(vidId);
+                if (url) moveVideoObjectUrl = url;
+            }
+        }
+        if (!useVid && !useImg) {
+            document.querySelectorAll('.xadrez-fx-layer').forEach(layer => layer.remove());
+        }
+    };
+
+    const createMoveHighlightUI = () => {
+        if (document.getElementById('move-highlight-ui-section')) return;
+        const container = document.createElement('div');
+        container.id = 'move-highlight-ui-section';
+        container.className = "ui-section";
+
+        const useVideo = GM_getValue('use_move_video', false);
+        const useImage = GM_getValue('use_move_image', false);
+        const keepNative = GM_getValue('keep_native_highlights', true);
+        const maskSize = GM_getValue('move_mask_size', 100);
+        const isRandom = GM_getValue('random_move_media', false);
+        const moveOpActive = GM_getValue('move_opacity_active', false);
+        const moveOpValue = GM_getValue('move_opacity_value', 80);
+
+        container.innerHTML = ttPolicy.createHTML(`
+            <div style="font-size:10px;font-weight:bold;margin-bottom:4px;color:#81b64c;">✨ Casas de Movimento</div>
+            <label class="control-group" style="font-weight:bold; flex-direction:row; cursor:pointer;">
+                <input type="checkbox" id="toggle-move-video" ${useVideo ? 'checked' : ''}> Animado (Vídeo)
+            </label>
+            <input type="file" id="move-video-upload" accept="video/mp4,video/webm" style="font-size:9px;width:100%;margin-bottom:4px; display:${useVideo?'block':'none'};">
+             <label class="control-group" style="font-weight:bold; flex-direction:row; cursor:pointer;">
+                <input type="checkbox" id="toggle-move-image" ${useImage ? 'checked' : ''}> Estático (Imagem)
+            </label>
+            <input type="file" id="move-image-upload" accept="image/*" style="font-size:9px;width:100%;margin-bottom:4px; display:${useImage?'block':'none'};">
+        `);
+        const uploaderUI = document.querySelector("#chess-uploader-ui");
+        const notesSection = document.getElementById('notes-ui-section');
+        if (notesSection) {
+            notesSection.parentNode.insertBefore(container, notesSection.nextSibling);
+        } else {
+            uploaderUI.appendChild(container);
+        }
+
+        const tVideo = document.getElementById('toggle-move-video');
+        const tImage = document.getElementById('toggle-move-image');
+        const iVideo = document.getElementById('move-video-upload');
+        const iImage = document.getElementById('move-image-upload');
+
+        tVideo.onchange = (e) => {
+            const active = e.target.checked;
+            safeSetValue('use_move_video', active);
+            iVideo.style.display = active ? 'block' : 'none';
+            if (active) {
+                tImage.checked = false;
+                safeSetValue('use_move_image', false); iImage.style.display = 'none';
+            }
+            updateMoveHighlightMode();
+        };
+        tImage.onchange = (e) => {
+            const active = e.target.checked;
+            safeSetValue('use_move_image', active);
+            iImage.style.display = active ? 'block' : 'none';
+            if (active) {
+                tVideo.checked = false;
+                safeSetValue('use_move_video', false); iVideo.style.display = 'none';
+            }
+            updateMoveHighlightMode();
+        };
+        iVideo.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            try {
+                const vidId = "LOCAL_DB_MOVE_VIDEO";
+                await saveLocalVideo(vidId, file);
+                safeSetValue('move_highlight_video_data', vidId);
+                updateMoveHighlightMode();
+            } catch(err) {
+                console.error("Erro ao salvar video:", err);
+                alert("Erro ao salvar o vídeo de movimento. Arquivo muito pesado?");
+            }
+        };
+        iImage.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => { safeSetValue('move_highlight_image_data', ev.target.result); updateMoveHighlightMode(); };
+            reader.readAsDataURL(file);
+        };
+    };
+    const createUI = () => {
+        if (!document.getElementById('chess-piece-filters')) {
+            const svgFilters = document.createElement('div');
+            svgFilters.id = 'chess-piece-filters';
+            svgFilters.innerHTML = ttPolicy.createHTML(`
+            <svg style="width:0;height:0;position:absolute;pointer-events:none;z-index:-1;">
+              <defs>
+                 <linearGradient id="grad-arrows" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop id="arr-stop-1" offset="0%" stop-color="var(--arr-c1)" />
+                    <stop id="arr-stop-2" offset="50%" stop-color="var(--arr-c2)" />
+                    <stop id="arr-stop-3" offset="100%" stop-color="var(--arr-c3)" />
+                 </linearGradient>
+              </defs>
+              <filter id="tint-white-pieces" color-interpolation-filters="sRGB">
+                 <feFlood id="flood-white" flood-color="${colorW}" result="color"/>
+                 <feBlend mode="multiply" in="color" in2="SourceGraphic" result="blend"/>
+                 <feComposite operator="in" in="blend" in2="SourceGraphic"/>
+              </filter>
+              <filter id="tint-black-pieces" color-interpolation-filters="sRGB">
+                 <feFlood id="flood-black" flood-color="${colorB}" result="color"/>
+                 <feBlend mode="screen" in="color" in2="SourceGraphic" result="blend"/>
+                 <feComposite operator="in" in="blend" in2="SourceGraphic"/>
+              </filter>
+              <filter id="grad-filter-white" color-interpolation-filters="sRGB" x="0%" y="0%" width="100%" height="100%">
+                 <feImage id="fe-img-w" href="" result="grad" preserveAspectRatio="none"/>
+                 <feComposite operator="in" in="grad" in2="SourceAlpha" result="maskedGrad"/>
+                 <feBlend mode="multiply" in="maskedGrad" in2="SourceGraphic" result="blend"/>
+                 <feComposite operator="in" in="blend" in2="SourceAlpha"/>
+              </filter>
+              <filter id="grad-filter-black" color-interpolation-filters="sRGB" x="0%" y="0%" width="100%" height="100%">
+                 <feImage id="fe-img-b" href="" result="grad" preserveAspectRatio="none"/>
+                 <feComposite operator="in" in="grad" in2="SourceAlpha" result="maskedGrad"/>
+                 <feBlend mode="screen" in="maskedGrad" in2="SourceGraphic" result="blend"/>
+                 <feComposite operator="in" in="blend" in2="SourceAlpha"/>
+              </filter>
+            </svg>`);
+            document.body.appendChild(svgFilters);
+            updatePieceGradients();
+        }
+
+        if (document.getElementById('chess-uploader-ui')) return;
+        const container = document.createElement('div');
+        container.id = 'chess-uploader-ui';
+        if (GM_getValue('gui_minimized')) container.classList.add('minimized');
+        document.documentElement.setAttribute('data-mode', highlightMode);
+        document.documentElement.setAttribute('data-bg-active', useBgImage);
+        document.documentElement.setAttribute('data-titanium', useTitaniumPieces);
+        document.documentElement.setAttribute('data-neon', useNeonCursor);
+        document.documentElement.setAttribute('data-curlock', useCursorLock);
+        document.documentElement.setAttribute('data-sword', useSwordCursor);
+        document.documentElement.setAttribute('data-color-w', useColorW);
+        document.documentElement.setAttribute('data-color-b', useColorB);
+        document.documentElement.setAttribute('data-arrow-grad', arrowGradActive);
+        document.documentElement.setAttribute('data-h-grad', hGradActive);
+        document.documentElement.setAttribute('data-w-grad', wGradActive);
+        document.documentElement.setAttribute('data-b-grad', bGradActive);
+
+        const neonGlow = document.createElement("div");
+        neonGlow.className = "neon-glow"; document.body.appendChild(neonGlow);
+
+        let neonTicking = false;
+        document.addEventListener("mousemove", e => {
+            if (!neonTicking) {
+                requestAnimationFrame(() => {
+                    neonGlow.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0) translate3d(-50%, -50%, 0)`;
+                    neonTicking = false;
+                });
+                neonTicking = true;
+            }
+        }, { passive: true });
+        const updateHistoryUI = () => {
+            const currentHistory = safeParseJSON(GM_getValue('chess_board_history', '[]'), []);
+            const histCont = document.getElementById('board-history-container'); if (!histCont) return;
+            const displayList = historyExpanded ? currentHistory : currentHistory.slice(0, RECENT_LIMIT);
+            histCont.innerHTML = ttPolicy.createHTML(displayList.map((img) => `<div class="history-item-container">${!FACTORY_IMAGES.includes(img) ? `<div class="delete-btn" data-url="${img}">✕</div>` : ''}<div class="history-item" data-url="${img}" style="background-image:url('${img}');"></div></div>`).join(''));
+            const showBtn = document.getElementById('show-more-history');
+            if (showBtn) {
+                showBtn.style.display = currentHistory.length > RECENT_LIMIT ? 'block' : 'none';
+                showBtn.innerText = historyExpanded ? "Ver Menos" : `Mais (${currentHistory.length - RECENT_LIMIT})`;
+            }
+            histCont.querySelectorAll('.history-item').forEach(el => el.onclick = () => { const d = el.getAttribute('data-url'); safeSetValue('chess_board_data', d); updateBoardStyle(d); });
+            histCont.querySelectorAll('.delete-btn').forEach(el => el.onclick = (e) => { e.stopPropagation(); let f = safeParseJSON(GM_getValue('chess_board_history', '[]'), []); f = f.filter(u => u !== el.getAttribute('data-url')); safeSetValue('chess_board_history', JSON.stringify(f)); updateHistoryUI(); });
+        };
+
+        const updateVideoHistoryUI = async () => {
+            const currentHistory = safeParseJSON(GM_getValue('chess_video_history', '[]'), []);
+            const histCont = document.getElementById('video-history-container'); if (!histCont) return;
+            const displayList = videoHistoryExpanded ? currentHistory : currentHistory.slice(0, RECENT_LIMIT);
+            let htmlArr = await Promise.all(displayList.map(async (vid) => {
+                let actualSrc = vid;
+                if (vid.startsWith("LOCAL_DB_VIDEO")) {
+                    const objUrl = await getLocalVideoURL(vid);
+                    if (!objUrl) return '';
+                    actualSrc = objUrl;
+                }
+                return `<div class="history-item-container">
+                    ${!FACTORY_VIDEOS.includes(vid) ? `<div class="delete-btn video-delete-btn" data-url="${vid}">✕</div>` : ''}
+                    <video class="history-item video-history-item" data-url="${vid}" src="${actualSrc}#t=0.1" muted preload="metadata" style="object-fit: cover; pointer-events: none;"></video>
+                </div>`;
+            }));
+            histCont.innerHTML = ttPolicy.createHTML(htmlArr.join(''));
+
+            const showBtn = document.getElementById('show-more-video-history');
+            if (showBtn) {
+                showBtn.style.display = currentHistory.length > RECENT_LIMIT ? 'block' : 'none';
+                showBtn.innerText = videoHistoryExpanded ? "Ver Menos" : `Mais (${currentHistory.length - RECENT_LIMIT})`;
+            }
+
+            histCont.querySelectorAll('.history-item-container').forEach(el => {
+                el.onclick = () => {
+                    const vid = el.querySelector('.video-history-item');
+                    if(vid) {
+                        const d = vid.getAttribute('data-url');
+                        safeSetValue('chess_board_video_data', d);
+                        cachedVideoData = d;
+                        ensureVideoExists();
+                    }
+                };
+            });
+            histCont.querySelectorAll('.video-delete-btn').forEach(el => {
+                el.onclick = (e) => {
+                    e.stopPropagation();
+                    const d = el.getAttribute('data-url');
+                    let f = safeParseJSON(GM_getValue('chess_video_history', '[]'), []);
+                    f = f.filter(u => u !== d);
+                    safeSetValue('chess_video_history', JSON.stringify(f));
+
+                    if (d.startsWith("LOCAL_DB_VIDEO")) {
+                        deleteLocalVideo(d);
+                        if (GM_getValue('chess_board_video_data') === d) {
+                            safeSetValue('chess_board_video_data', FACTORY_VIDEOS[0]);
+                            cachedVideoData = FACTORY_VIDEOS[0];
+                            ensureVideoExists();
+                        }
+                    }
+                    updateVideoHistoryUI();
+                };
+            });
+        };
+
+        container.innerHTML = ttPolicy.createHTML(`
+            <div id="gui-toggle" style="cursor:pointer;font-weight:bold;color:#81b64c;text-align:right; font-size:12px;">${GM_getValue('gui_minimized') ? '🖼️' : '✕'}</div>
+            <div class="ui-section" style="border:none; padding:0;">
+                <label class="control-group" style="font-weight:bold; flex-direction:row;"><input type="checkbox" id="bg-image-toggle" ${useBgImage ? 'checked' : ''}> Fundo</label>
+                <label style="display:flex; align-items:center; gap:5px; font-size:10px; font-weight:bold;"> Opacidade: <span id="op-val">${Math.round(initialOpacity * 100)}%</span> <div id="preview-grid" class="color-preview" style="background:${initialGridColor}"></div> <div class="wheel-trigger" data-for="grid"></div> <label class="black-color-box"><input type="checkbox" id="black-grid-toggle" ${initialBlackGridActive ? 'checked' : ''}> PRETO</label></label>
+                <div id="wheel-grid" class="wheel-container"><canvas id="canv-grid" class="color-wheel" width="120" height="120"></canvas><div id="cursor-grid" class="wheel-cursor"></div></div>
+                <input type="range" id="opacity-slider" min="0" max="100" value="${initialOpacity * 100}" style="width:100%">
+            </div>
+            <div class="ui-section">
+                <div class="premium-box">
+                    <label class="control-group" style="font-weight:bold; flex-direction:row; margin-bottom:4px; cursor:pointer; color:#ffd700; align-items:center; gap:5px;"><input type="checkbox" id="titanium-pieces-toggle" ${useTitaniumPieces ? 'checked' : ''}> 💎 Peças Premium</label>
+                    <label class="control-group" style="font-weight:bold; flex-direction:row; margin-bottom:0; cursor:pointer; color:#ff4d4d; align-items:center; gap:5px;"><input type="checkbox" id="neon-cursor-toggle" ${useNeonCursor ? 'checked' : ''}> 🚨 Neon Cursor <div id="preview-neon" class="color-preview" style="background:${neonColor}"></div> <div class="wheel-trigger" data-for="neon"></div></label>
+                    <div id="wheel-neon" class="wheel-container"><canvas id="canv-neon" class="color-wheel" width="120" height="120"></canvas><div id="cursor-neon" class="wheel-cursor"></div></div>
+                    <label class="control-group" style="font-weight:bold; flex-direction:row; margin-top:4px; cursor:pointer; color:#3498db; align-items:center; gap:5px;"><input type="checkbox" id="cursor-lock-toggle" ${useCursorLock ? 'checked' : ''}> 🔒 Cursor Lock</label>
+                    <label class="control-group" style="font-weight:bold; flex-direction:row; margin-top:4px; cursor:pointer; color:#00f2ff; align-items:center; gap:5px;"><input type="checkbox" id="sword-cursor-toggle" ${useSwordCursor ? 'checked' : ''}> 🗡️ Cursor Espada</label>
+                </div>
+            </div>
+            <div class="ui-section">
+                <div class="control-group" style="font-weight:bold;">
+                    <label style="flex-direction:row; display:flex; align-items:center; gap:5px;"><input type="checkbox" id="color-w-toggle" ${useColorW ? 'checked' : ''}> ♔ Cor Brancas <div id="preview-w-pieces" class="color-preview" style="background:${colorW}"></div> <div class="wheel-trigger" data-for="w-pieces"></div></label>
+
+                    <label style="font-size:9px; display:flex; margin-top:4px; color:#e67e22; align-items:center; gap:3px;"><input type="checkbox" id="w-grad-toggle" ${wGradActive ? 'checked' : ''}> 🌈 Triplo Gradient</label>
+                    <div id="w-grad-container" style="display:${wGradActive ? 'flex' : 'none'}; gap:2px; margin-top:2px;">
+                        <input type="color" id="w-c1" value="${GM_getValue('w_c1', '#ffffff')}" style="width:100%; height:15px; padding:0; border:none;">
+                        <input type="color" id="w-c2" value="${GM_getValue('w_c2', '#dddddd')}" style="width:100%; height:15px; padding:0; border:none;">
+                        <input type="color" id="w-c3" value="${GM_getValue('w_c3', '#aaaaaa')}" style="width:100%; height:15px; padding:0; border:none;">
+                    </div>
+
+                    <div id="wheel-w-pieces" class="wheel-container"><canvas id="canv-w-pieces" class="color-wheel" width="120" height="120"></canvas><div id="cursor-w-pieces" class="wheel-cursor"></div></div>
+
+                    <label style="flex-direction:row; display:flex; align-items:center; gap:5px; margin-top:4px;"><input type="checkbox" id="color-b-toggle" ${useColorB ? 'checked' : ''}> ♚ Cor Negras <div id="preview-b-pieces" class="color-preview" style="background:${colorB}"></div> <div class="wheel-trigger" data-for="b-pieces"></div></label>
+
+                    <label style="font-size:9px; display:flex; margin-top:4px; color:#e67e22; align-items:center; gap:3px;"><input type="checkbox" id="b-grad-toggle" ${bGradActive ? 'checked' : ''}> 🌈 Triplo Gradient</label>
+                    <div id="b-grad-container" style="display:${bGradActive ? 'flex' : 'none'}; gap:2px; margin-top:2px;">
+                        <input type="color" id="b-c1" value="${GM_getValue('b_c1', '#555555')}" style="width:100%; height:15px; padding:0; border:none;">
+                        <input type="color" id="b-c2" value="${GM_getValue('b_c2', '#333333')}" style="width:100%; height:15px; padding:0; border:none;">
+                        <input type="color" id="b-c3" value="${GM_getValue('b_c3', '#111111')}" style="width:100%; height:15px; padding:0; border:none;">
+                    </div>
+
+                    <div id="wheel-b-pieces" class="wheel-container"><canvas id="canv-b-pieces" class="color-wheel" width="120" height="120"></canvas><div id="cursor-b-pieces" class="wheel-cursor"></div></div>
+                </div>
+            </div>
+            <div class="ui-section">
+                <label class="control-group" style="font-weight:bold; flex-direction:row;"><input type="checkbox" id="highlight-toggle" ${useHighlight ? 'checked' : ''}> Marcação</label>
+
+                <label style="font-size:9px; display:flex; margin-top:4px; margin-bottom:4px; color:#e67e22; align-items:center; gap:3px;"><input type="checkbox" id="h-grad-toggle" ${hGradActive ? 'checked' : ''}> 🌈 Gradiente Triplo nas Marcações</label>
+                <div id="h-grad-container" style="display:${hGradActive ? 'flex' : 'none'}; gap:2px; margin-bottom:4px;">
+                    <input type="color" id="h-c1" value="${GM_getValue('h_c1', '#ff0000')}" style="width:100%; height:15px; padding:0; border:none;">
+                    <input type="color" id="h-c2" value="${GM_getValue('h_c2', '#ffff00')}" style="width:100%; height:15px; padding:0; border:none;">
+                    <input type="color" id="h-c3" value="${GM_getValue('h_c3', '#00ff00')}" style="width:100%; height:15px; padding:0; border:none;">
+                </div>
+
+                <div class="control-group"><label><input type="radio" name="h-mode" value="solid" ${highlightMode === 'solid' ? 'checked' : ''}> Sólida <div id="preview-solid" class="color-preview" style="background:${solidColor}"></div> <div class="wheel-trigger" data-for="solid"></div></label><div id="wheel-solid" class="wheel-container"><canvas id="canv-solid" class="color-wheel" width="120" height="120"></canvas><div id="cursor-solid" class="wheel-cursor"></div></div></div>
+                <div class="control-group"><label><input type="radio" name="h-mode" value="radial" ${highlightMode === 'radial' ? 'checked' : ''}> Radial <div id="preview-radial" class="color-preview" style="background:${radialColor}"></div> <div class="wheel-trigger" data-for="radial"></div></label><div id="wheel-radial" class="wheel-container"><canvas id="canv-radial" class="color-wheel" width="120" height="120"></canvas><div id="cursor-radial" class="wheel-cursor"></div></div></div>
+            </div>
+            <div class="ui-section">
+                <div class="control-group" style="font-weight:bold;">
+                    <label style="flex-direction:row; display:flex; align-items:center; gap:5px;"> Setas </label>
+                    <div id="static-arrow-ui" style="display:block !important; margin-top:4px;">
+                         <label style="font-size:10px;">Cor Fixa: <div id="preview-arrows" class="color-preview" style="background:${arrowStaticColor}"></div> <div class="wheel-trigger" data-for="arrows"></div></label>
+
+                         <label style="font-size:9px; display:flex; margin-top:6px; color:#e67e22; align-items:center; gap:3px;"><input type="checkbox" id="arrow-grad-toggle" ${arrowGradActive ? 'checked' : ''}> 🌈 Gradiente Triplo (Fumaças)</label>
+                         <div id="arrow-grad-container" style="display:${arrowGradActive ? 'flex' : 'none'}; gap:2px; margin-top:2px;">
+                             <input type="color" id="arr-c1" value="${GM_getValue('arrow_c1', '#ff0000')}" style="width:100%; height:15px; padding:0; border:none;" title="Cor 1">
+                             <input type="color" id="arr-c2" value="${GM_getValue('arrow_c2', '#ffff00')}" style="width:100%; height:15px; padding:0; border:none;" title="Cor 2">
+                             <input type="color" id="arr-c3" value="${GM_getValue('arrow_c3', '#00ff00')}" style="width:100%; height:15px; padding:0; border:none;" title="Cor 3">
+                         </div>
+
+                         <div id="wheel-arrows" class="wheel-container"><canvas id="canv-arrows" class="color-wheel" width="120" height="120"></canvas><div id="cursor-arrows" class="wheel-cursor"></div></div>
+
+                         <label class="control-group" style="font-weight:bold; flex-direction:row; cursor:pointer; margin-top:6px; color:#3498db;">
+                             <input type="checkbox" id="arrow-thick-toggle" ${arrowThickActive ? 'checked' : ''}> Alterar Espessura
+                         </label>
+                         <div style="font-size:9px; margin-top:2px; display:${arrowThickActive ? 'flex' : 'none'}; justify-content:space-between; align-items:center;" id="arrow-thick-container">
+                            <span>Grossura:</span> <span id="val-arrow-thick">${arrowThickness}%</span>
+                         </div>
+                         <input type="range" id="arrow-thick-slider" min="0" max="100" step="1" value="${arrowThickness}" style="width:100%; margin-bottom:2px; display:${arrowThickActive ? 'block' : 'none'};">
+                    </div>
+                </div>
+            </div>
+            <div class="ui-section">
+                <div style="font-size:10px; font-weight:bold; margin-bottom:4px; color:#81b64c;">🖼️ Adicionar Imagem</div>
+                <input type="file" id="board-file-input" accept="image/*" style="font-size:10px;width:100%;margin-bottom:6px;">
+                <button id="board-reset-btn" style="width:100%;background:#45423e;color:#eee;border:none;padding:5px;cursor:pointer;font-size:10px;border-radius:2px;margin-bottom:6px;">Resetar Imagem</button>
+                <div id="board-history-container"></div>
+                <button id="show-more-history" style="display:none;">Ver Mais</button>
+            </div>
+            <div class="ui-section">
+                <div style="font-size:10px; font-weight:bold; margin-bottom:4px; color:#81b64c;">🎥 Adicionar Vídeo (.mp4)</div>
+                <label class="control-group" style="font-weight:bold; flex-direction:row; margin-bottom:4px; cursor:pointer;"><input type="checkbox" id="bg-video-toggle" ${cachedBgVideoActive ? 'checked' : ''}> Fundo Animado</label>
+                <label class="control-group" style="font-weight:bold; flex-direction:row; margin-bottom:4px; cursor:pointer;"><input type="checkbox" id="video-muted-toggle" ${cachedVideoSound ? 'checked' : ''}> Ativar Som do Vídeo</label>
+                <div style="display:flex; align-items:center; gap:5px; font-size:9px; margin-bottom:6px;">
+                    <span>🔈 Volume:</span><input type="range" id="video-volume-slider" min="0" max="100" value="${cachedVideoVolume * 100}" style="width:100%">
+                </div>
+                <input type="file" id="video-file-input" accept="video/*" style="font-size:10px;width:100%;margin-bottom:6px;">
+                <button id="video-reset-btn" style="width:100%;background:#45423e;color:#eee;border:none;padding:5px;cursor:pointer;font-size:10px;border-radius:2px;margin-bottom:6px;">Resetar Vídeo</button>
+                <div id="video-history-container"></div>
+                <button id="show-more-video-history" style="display:none;">Ver Mais</button>
+            </div>
+            <div class="ui-section">
+                <div style="font-size:10px; font-weight:bold; margin-bottom:4px; color:#81b64c;">🎵 Músicas</div>
+                <div style="margin-bottom:6px;"><label style="font-size:9px; background:#444; padding:3px 6px; border-radius:2px; cursor:pointer; display:block; text-align:center;">📂 Abrir MP3 do PC<input type="file" id="music-file-pc" accept="audio/*" style="display:none;"></label></div>
+                <div id="music-list-container" style="max-height: 100px; overflow-y: auto; background: #111; border: 0.5px solid #555; border-radius: 2px; padding: 2px; margin-bottom: 4px; display: flex; flex-direction: column; gap: 2px;">
+                    ${MUSIC_LIST.map(m => `<div class="music-item" data-url="${m.url}" style="display:flex; justify-content:space-between; align-items:center; background:#222; padding:2px 4px; cursor:pointer; font-size:9px; border-radius:2px; border:0.5px solid transparent;"><span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:80%;" title="${m.name}">${m.name}</span><span class="music-play-btn" style="color:#81b64c; font-size:11px;">▶</span></div>`).join('')}
+                </div>
+                <div style="display:flex; align-items:center; gap:5px; font-size:9px;"><span>🔊</span><input type="range" id="global-music-volume" min="0" max="100" value="${globalAudio.volume * 100}" style="width:100%"></div>
+            </div>
+        `);
+        document.body.appendChild(container);
+
+        document.getElementById('show-more-history').onclick = () => { historyExpanded = !historyExpanded; updateHistoryUI(); };
+        updateHistoryUI();
+
+        document.getElementById('show-more-video-history').onclick = () => { videoHistoryExpanded = !videoHistoryExpanded; updateVideoHistoryUI(); };
+        updateVideoHistoryUI();
+
+        document.getElementById('bg-image-toggle').onchange = (e) =>
+        {
+            safeSetValue('use_bg_image', e.target.checked);
+            updateBoardStyle(GM_getValue('chess_board_data', FACTORY_IMAGES[0]));
+        };
+
+        document.getElementById('black-grid-toggle').onchange = (e) => {
+            safeSetValue('black_grid_active', e.target.checked);
+            if (GM_getValue('use_bg_image', true) || cachedBgVideoActive) {
+                document.documentElement.style.setProperty('--board-grid-svg', getGridSVG(GM_getValue('dark_squares_opacity', 0.2), GM_getValue('dark_squares_color', '#000000')));
+            }
+        };
+
+        document.getElementById('titanium-pieces-toggle').onchange = (e) => { safeSetValue('use_titanium_pieces', e.target.checked); document.documentElement.setAttribute('data-titanium', e.target.checked); };
+        document.getElementById('neon-cursor-toggle').onchange = (e) => { safeSetValue('use_neon_cursor', e.target.checked); document.documentElement.setAttribute('data-neon', e.target.checked); };
+        document.getElementById('cursor-lock-toggle').onchange = (e) => { safeSetValue('use_cursor_lock', e.target.checked); document.documentElement.setAttribute('data-curlock', e.target.checked); };
+        document.getElementById('sword-cursor-toggle').onchange = (e) => { safeSetValue('use_sword_cursor', e.target.checked); document.documentElement.setAttribute('data-sword', e.target.checked); };
+        document.getElementById('highlight-toggle').onchange = (e) => { safeSetValue('use_custom_highlight', e.target.checked); document.documentElement.style.setProperty('--highlight-active', e.target.checked ? '1' : '0'); };
+        document.getElementById('color-w-toggle').onchange = (e) => { safeSetValue('use_color_w', e.target.checked); document.documentElement.setAttribute('data-color-w', e.target.checked); };
+        document.getElementById('color-b-toggle').onchange = (e) => { safeSetValue('use_color_b', e.target.checked); document.documentElement.setAttribute('data-color-b', e.target.checked); };
+        document.querySelectorAll('input[name="h-mode"]').forEach(r => {
+            r.onchange = (e) => {
+                safeSetValue('highlight_mode', e.target.value);
+                document.documentElement.setAttribute('data-mode', e.target.value);
+                updateLivePreview();
+            };
+        });
+        document.getElementById('bg-video-toggle').onchange = (e) => {
+            safeSetValue('use_bg_video', e.target.checked);
+            cachedBgVideoActive = e.target.checked;
+            updateBoardStyle(GM_getValue('chess_board_data', FACTORY_IMAGES[0]));
+            ensureVideoExists();
+        };
+
+        const bindGrad = (toggleId, containerId, varC1, varC2, varC3, attrData, requiresFilterUpdate = false) => {
+            document.getElementById(toggleId).onchange = (e) => {
+                const active = e.target.checked;
+                safeSetValue(attrData.replace('data-', '').replace('-', '_') + '_active', active);
+                document.getElementById(containerId).style.display = active ? 'flex' : 'none';
+                document.documentElement.setAttribute(attrData, active);
+            };
+            document.getElementById(containerId).querySelectorAll('input').forEach((inp, idx) => {
+                inp.oninput = (e) => {
+                    const cKey = [varC1, varC2, varC3][idx];
+                    safeSetValue(cKey.replace('--', '').replace('-', '_'), e.target.value);
+                    document.documentElement.style.setProperty(cKey, e.target.value);
+                    if (cKey.startsWith('--h-c')) {
+                        document.documentElement.style.setProperty(cKey + '-rgb', hexToRgb(e.target.value));
+                    }
+                    if (requiresFilterUpdate) updatePieceGradients();
+                };
+             });
+        };
+
+        bindGrad('arrow-grad-toggle', 'arrow-grad-container', '--arr-c1', '--arr-c2', '--arr-c3', 'data-arrow-grad');
+        bindGrad('h-grad-toggle', 'h-grad-container', '--h-c1', '--h-c2', '--h-c3', 'data-h-grad');
+        bindGrad('w-grad-toggle', 'w-grad-container', '--w-c1', '--w-c2', '--w-c3', 'data-w-grad', true);
+        bindGrad('b-grad-toggle', 'b-grad-container', '--b-c1', '--b-c2', '--b-c3', 'data-b-grad', true);
+        document.getElementById('video-muted-toggle').onchange = (e) => {
+            safeSetValue('video_sound_active', e.target.checked);
+            cachedVideoSound = e.target.checked;
+            ensureVideoExists();
+        };
+
+        document.getElementById('video-volume-slider').oninput = (e) => {
+            const vol = e.target.value / 100;
+            safeSetValue('video_volume', vol);
+            cachedVideoVolume = vol;
+            document.querySelectorAll('.custom-chess-bg-video').forEach(vid => vid.volume = vol);
+        };
+        document.getElementById('arrow-thick-toggle').onchange = (e) => {
+            const active = e.target.checked;
+            safeSetValue('arrow_thick_active', active);
+            document.getElementById('arrow-thick-slider').style.display = active ? 'block' : 'none';
+            document.getElementById('arrow-thick-container').style.display = active ? 'flex' : 'none';
+            document.documentElement.style.setProperty('--custom-arrow-thickness', active ? getThicknessValue(GM_getValue('arrow_thickness', 50)) : '0.1');
+        };
+
+        document.getElementById('arrow-thick-slider').oninput = (e) => {
+            const v = e.target.value;
+            document.getElementById('val-arrow-thick').innerText = v + '%';
+            document.documentElement.style.setProperty('--custom-arrow-thickness', getThicknessValue(v));
+            safeSetValue('arrow_thickness', v);
+        };
+        const initWheel = (id, cssVar, gmKey, cb) => {
+            const canvas = document.getElementById(`canv-${id}`);
+            const cursor = document.getElementById(`cursor-${id}`); const preview = document.getElementById(`preview-${id}`);
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            const radius = canvas.width / 2;
+            for (let angle = 0; angle < 360; angle++) {
+                const sA = (angle - 1) * Math.PI / 180, eA = (angle + 1) * Math.PI / 180;
+                ctx.beginPath(); ctx.moveTo(radius, radius); ctx.arc(radius, radius, radius, sA, eA); ctx.closePath();
+                const g = ctx.createRadialGradient(radius, radius, 0, radius, radius, radius); g.addColorStop(0, 'white');
+                g.addColorStop(1, `hsl(${angle}, 100%, 50%)`); ctx.fillStyle = g; ctx.fill();
+            }
+            const pick = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left, y = e.clientY - rect.top; const data = ctx.getImageData(Math.floor(x), Math.floor(y), 1, 1).data;
+                if (data[3] === 0) return;
+                cursor.style.left = `${x}px`; cursor.style.top = `${y}px`; const hex = rgbToHex(data[0], data[1], data[2]); preview.style.background = hex;
+                if (cssVar) document.documentElement.style.setProperty(cssVar, cssVar.includes('rgb') ? `${data[0]}, ${data[1]}, ${data[2]}` : hex);
+                safeSetValue(gmKey, hex); if (cb) cb(hex);
+            };
+            let dragging = false;
+            canvas.onmousedown = (e) => { dragging = true; pick(e); }; window.addEventListener('mousemove', (e) => { if(dragging) pick(e); });
+            window.addEventListener('mouseup', () => { dragging = false; });
+        };
+
+        document.querySelectorAll('.wheel-trigger').forEach(t => {
+            t.onclick = () => {
+                const tid = t.getAttribute('data-for'), tcont = document.getElementById(`wheel-${tid}`); if (!tcont) return;
+                const active = tcont.classList.contains('active'); document.querySelectorAll('.wheel-container').forEach(c => c.classList.remove('active'));
+                if (!active) {
+                    tcont.classList.add('active');
+                    if (tid === 'neon') initWheel('neon', '--custom-neon-rgb', 'neon_custom_color');
+                    else if (tid === 'arrows') initWheel('arrows', '--custom-arrow-color', 'arrow_static_color');
+                    else if (tid === 'grid') initWheel('grid', null, 'dark_squares_color', (hex) => { if (GM_getValue('use_bg_image', true) || cachedBgVideoActive) document.documentElement.style.setProperty('--board-grid-svg', getGridSVG(GM_getValue('dark_squares_opacity', 0.2), hex)); });
+                    else if (tid === 'w-pieces') initWheel('w-pieces', null, 'white_piece_color', (hex) => { const flood = document.getElementById('flood-white');
+                    if(flood) flood.setAttribute('flood-color', hex); });
+                    else if (tid === 'b-pieces') initWheel('b-pieces', null, 'black_piece_color', (hex) => { const flood = document.getElementById('flood-black'); if(flood) flood.setAttribute('flood-color', hex); });
+                    else initWheel(tid, tid === 'solid' ? '--solid-rgb' : '--radial-rgb', tid === 'solid' ? 'highlight_color' : 'radial_color');
+                }
+            };
+        });
+        document.getElementById('opacity-slider').oninput = (e) => { const v = e.target.value / 100; document.getElementById('op-val').innerText = `${e.target.value}%`;
+        if (GM_getValue('use_bg_image', true) || cachedBgVideoActive) document.documentElement.style.setProperty('--board-grid-svg', getGridSVG(v, GM_getValue('dark_squares_color', '#000000'))); safeSetValue('dark_squares_opacity', v); };
+        document.getElementById('gui-toggle').onclick = () => { const m = container.classList.toggle('minimized');
+            document.getElementById('gui-toggle').innerText = m ? '🖼️' : '✕'; safeSetValue('gui_minimized', m); };
+        document.getElementById('board-file-input').onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const data = ev.target.result;
+                safeSetValue('chess_board_data', data);
+                updateBoardStyle(data);
+                let hist = safeParseJSON(GM_getValue('chess_board_history', '[]'), []);
+                hist = [data, ...hist.filter(x => x !== data)].slice(0, MAX_HISTORY);
+                safeSetValue('chess_board_history', JSON.stringify(hist));
+                updateHistoryUI();
+            };
+            reader.readAsDataURL(file);
+        };
+
+        document.getElementById('board-reset-btn').onclick = () => { safeSetValue('chess_board_data', FACTORY_IMAGES[0]); updateBoardStyle(FACTORY_IMAGES[0]); };
+        document.getElementById('video-file-input').onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const btn = document.getElementById('video-reset-btn');
+            const originalText = btn.innerText;
+            btn.innerText = "⏳ Carregando... Aguarde...";
+            btn.style.background = "#d35400";
+            try {
+                const vidId = "LOCAL_DB_VIDEO_" + Date.now();
+                await saveLocalVideo(vidId, file);
+
+                cachedVideoData = vidId;
+                safeSetValue('chess_board_video_data', vidId);
+                let hist = safeParseJSON(GM_getValue('chess_video_history', '[]'), []);
+                if (!hist.includes(vidId)) {
+                    hist.unshift(vidId);
+                    if (hist.length > MAX_VIDEO_HISTORY) {
+                        const removed = hist.pop();
+                        if (removed.startsWith("LOCAL_DB_VIDEO")) {
+                            deleteLocalVideo(removed);
+                        }
+                    }
+                    safeSetValue('chess_video_history', JSON.stringify(hist));
+                }
+
+                updateVideoHistoryUI();
+                ensureVideoExists();
+            } catch(err) {
+                console.error("Erro ao carregar video:", err);
+                alert("Erro ao salvar o vídeo. Tente um arquivo menor ou verifique se o navegador tem espaço.");
+            } finally {
+                btn.innerText = originalText;
+                btn.style.background = "#45423e";
+                e.target.value = '';
+            }
+        };
+        document.getElementById('video-reset-btn').onclick = () => {
+            safeSetValue('chess_board_video_data', FACTORY_VIDEOS[0]);
+            cachedVideoData = FACTORY_VIDEOS[0];
+            ensureVideoExists();
+        };
+
+        document.getElementById('global-music-volume').oninput = (e) => { const vol = e.target.value / 100; globalAudio.volume = vol;
+        safeSetValue('music_volume', vol); };
+
+        const updateMusicUI = () => {
+            document.querySelectorAll('.music-item').forEach(item => {
+                const btn = item.querySelector('.music-play-btn'); const cleanSrc = globalAudio.src.split('?')[0]; const cleanUrl = fixGitHubUrl(item.getAttribute('data-url')).split('?')[0];
+                const isPlaying = !globalAudio.paused && decodeURI(cleanSrc).includes(decodeURI(cleanUrl));
+                btn.innerText = isPlaying ? '⏸' : '▶'; btn.style.color = isPlaying ? '#ff4d4d' : '#81b64c';
+                item.style.background = isPlaying ? '#333' : '#222'; item.style.borderColor = isPlaying ? '#81b64c' : 'transparent';
+            });
+        };
+
+        const playTrack = async (rawUrl) => {
+            const url = fixGitHubUrl(rawUrl);
+            try {
+                const currentSrc = decodeURI(globalAudio.src.split('?')[0]);
+                const targetUrl = decodeURI(url.split('?')[0]);
+                if (!currentSrc.includes(targetUrl)) {
+                    globalAudio.pause();
+                    globalAudio.src = url;
+                    globalAudio.load();
+                    userPausedMusic = false;
+                    await globalAudio.play();
+                } else {
+                    if (globalAudio.paused) {
+                        userPausedMusic = false;
+                        await globalAudio.play();
+                    } else {
+                        userPausedMusic = true;
+                        globalAudio.pause();
+                    }
+                }
+            } catch (err) { console.error("Erro ao tocar música:", err);
+            }
+            updateMusicUI();
+        };
+        const attachMusicEvents = () => { document.querySelectorAll('.music-item').forEach(item => { item.onclick = (e) => { e.preventDefault(); playTrack(item.getAttribute('data-url')); }; }); };
+        attachMusicEvents();
+        document.getElementById('music-file-pc').onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader(); reader.onload = (ev) => {
+                const url = ev.target.result;
+                const mContainer = document.getElementById('music-list-container');
+                const newItem = document.createElement('div');
+                newItem.className = 'music-item';
+                newItem.setAttribute('data-url', url);
+                newItem.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:#222; padding:2px 4px; cursor:pointer; font-size:9px; border-radius:2px; border:0.5px solid transparent;';
+                newItem.innerHTML = ttPolicy.createHTML(`<span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:80%;" title="${file.name}">${file.name}</span><span class="music-play-btn" style="color:#81b64c; font-size:11px;">▶</span>`);
+                mContainer.prepend(newItem);
+                attachMusicEvents(); playTrack(url);
+            }; reader.readAsDataURL(file);
+        };
+
+        globalAudio.onended = updateMusicUI; globalAudio.onpause = updateMusicUI; globalAudio.onplay = updateMusicUI;
+    };
+    const waitUI = setInterval(() => {
+        const ui = document.getElementById('chess-uploader-ui');
+        if (!ui) return;
+
+        clearInterval(waitUI);
+        createPieceUI();
+        createNotesUI();
+        createMoveHighlightUI();
+        applyCustomPieces();
+        renderNotes();
+        updateMoveHighlightMode();
+    }, 500);
+    const observer = new MutationObserver(() => { if (!document.getElementById('chess-uploader-ui') && document.body) createUI(); });
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+    setInterval(() => {
+        if (cachedBgVideoActive) {
+            const board = document.querySelector('.board, chess-board, [class*="chess-board"]');
+            if (board && !board.querySelector('.custom-chess-bg-video')) {
+                ensureVideoExists();
+            }
+        }
+    }, 1000);
+    let piecePositions = new Map();
+    let lastMoveSquares = [];
+    let lastRenderedMoveKey = "";
+
+    let savedMoveVideos = safeParseJSON(GM_getValue('saved_move_videos', '[]'), []);
+    let savedMoveImages = safeParseJSON(GM_getValue('saved_move_images', '[]'), []);
+    let videoUrlCacheMove = {};
+    const defaultFactoryImages = [
+        "https://raw.githubusercontent.com/dasfar45/chess-assets-2/main/0.png",
+        "https://raw.githubusercontent.com/dasfar45/chess-assets-2/main/2.png",
+        "https://raw.githubusercontent.com/dasfar45/chess-assets-2/main/3.png",
+        "https://raw.githubusercontent.com/dasfar45/chess-assets-2/main/4.png",
+        "https://raw.githubusercontent.com/dasfar45/chess-assets-2/main/5.png",
+        "https://raw.githubusercontent.com/dasfar45/chess-assets-2/main/6.png",
+        "https://raw.githubusercontent.com/dasfar45/chess-assets-2/main/7.png",
+        "https://raw.githubusercontent.com/dasfar45/chess-assets-2/main/8.png",
+        "https://raw.githubusercontent.com/dasfar45/chess-assets-2/main/alien_preview_rev_1.png",
+        "https://raw.githubusercontent.com/dasfar45/chess-assets-2/main/caveira_preview_rev_1.png",
+        "https://raw.githubusercontent.com/dasfar45/chess-assets-2/main/nerd_preview_rev_1.png"
+    ];
+    let savedCustomMoves = safeParseJSON(GM_getValue('saved_custom_moves', '[]'), []);
+    let forceFactoryUpdate = GM_getValue('force_factory_update_v1', false);
+    if (!forceFactoryUpdate || savedCustomMoves.length === 0) {
+        const existingUrls = savedCustomMoves.map(m => m.imgB64);
+        defaultFactoryImages.forEach(url => {
+            if (!existingUrls.includes(url)) {
+                savedCustomMoves.push({
+                    imgB64: url, sqColor: '#81cec7', rippleColor: '#81cec7', useRipples: true,
+                    size: 26, speed: 'med', dist: 2.5, pos: 'tr', hotkey: null,
+                    isGrad: false, c1: '#81cec7', c2: '#81cec7', c3: '#81cec7'
+                });
+            }
+        });
+        safeSetValue('saved_custom_moves', JSON.stringify(savedCustomMoves));
+        safeSetValue('force_factory_update_v1', true);
+    }
+
+    let activeCustomMoveIndex = GM_getValue('active_custom_move_index', -1);
+    let tempCustomSetup = {
+        imgB64: null, sqColor: '#81cec7', rippleColor: '#81cec7', useRipples: true,
+        size: 26, speed: 'med', dist: 2.5, pos: 'tr', isGrad: false,
+        c1: '#81cec7', c2: '#81cec7', c3: '#81cec7'
+    };
+    document.addEventListener('keydown', (e) => {
+        const tag = e.target.tagName.toUpperCase();
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target.isContentEditable) return;
+
+        let keyPressed = e.key;
+        if (keyPressed === ' ') keyPressed = 'Space';
+
+        const slotIdx = savedCustomMoves.findIndex(m => m.hotkey && m.hotkey.toLowerCase() === keyPressed.toLowerCase());
+
+        if (slotIdx !== -1) {
+            e.preventDefault();
+            if (activeCustomMoveIndex === slotIdx) {
+                safeSetValue('active_custom_move_index', -1);
+                activeCustomMoveIndex = -1;
+            } else {
+                safeSetValue('active_custom_move_index', slotIdx);
+                activeCustomMoveIndex = slotIdx;
+
+                tempCustomSetup = JSON.parse(JSON.stringify(savedCustomMoves[slotIdx]));
+                if(tempCustomSetup.isGrad === undefined) { tempCustomSetup.isGrad = false; tempCustomSetup.c1 = tempCustomSetup.sqColor;
+tempCustomSetup.c2 = tempCustomSetup.sqColor; tempCustomSetup.c3 = tempCustomSetup.sqColor; }
+
+                if (document.getElementById('wk-sq-cp')) document.getElementById('wk-sq-cp').value = tempCustomSetup.sqColor;
+                if (document.getElementById('wk-sq-cp2')) document.getElementById('wk-sq-cp2').style.backgroundColor = tempCustomSetup.sqColor;
+                if (document.getElementById('wk-sq-hex')) document.getElementById('wk-sq-hex').value = tempCustomSetup.sqColor;
+                if (document.getElementById('wk-grad-toggle')) {
+                    document.getElementById('wk-grad-toggle').checked = tempCustomSetup.isGrad;
+                    document.getElementById('wk-grad-container').style.display = tempCustomSetup.isGrad ? 'flex' : 'none';
+                    document.getElementById('wk-c1').value = tempCustomSetup.c1;
+                    document.getElementById('wk-c2').value = tempCustomSetup.c2;
+                    document.getElementById('wk-c3').value = tempCustomSetup.c3;
+                }
+
+                if (document.getElementById('wk-rip-cp')) document.getElementById('wk-rip-cp').value = tempCustomSetup.rippleColor;
+                if (document.getElementById('wk-rip-cp2')) document.getElementById('wk-rip-cp2').style.backgroundColor = tempCustomSetup.rippleColor;
+                if (document.getElementById('wk-rip-hex')) document.getElementById('wk-rip-hex').value = tempCustomSetup.rippleColor;
+                if (document.getElementById('wk-use-rip')) document.getElementById('wk-use-rip').checked = tempCustomSetup.useRipples;
+                if (document.getElementById('wk-size')) document.getElementById('wk-size').value = tempCustomSetup.size;
+                if (document.getElementById('wk-dist')) document.getElementById('wk-dist').value = tempCustomSetup.dist;
+                if (document.getElementById('wk-speed')) document.getElementById('wk-speed').value = tempCustomSetup.speed;
+                if (document.getElementById('wk-pos')) document.getElementById('wk-pos').value = tempCustomSetup.pos;
+                if (typeof updateLivePreview === 'function') updateLivePreview();
+            }
+            if (typeof renderCustomMovesGallery === 'function') renderCustomMovesGallery();
+        }
+    });
+
+    const customFxStyle = document.createElement('style');
+    customFxStyle.textContent = `
+        @keyframes fakeBrilliantRipple {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; border-width: 2px; }
+            100% { transform: translate(-50%, -50%) scale(var(--ripple-scale)); opacity: 0; border-width: 0.5px; }
+        }
+    `;
+    document.head.appendChild(customFxStyle);
+    const customHexToRgb = (hex) => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '129, 206, 199';
+    };
+    const showCustomColorWheel = (triggerElement, callback) => {
+        let existing = document.getElementById('xadrez-custom-wheel-popup');
+        if (existing) existing.remove();
+
+        const size = 120;
+        const popup = document.createElement('div');
+        popup.id = 'xadrez-custom-wheel-popup';
+        const rect = triggerElement.getBoundingClientRect();
+        popup.style.cssText = `position:fixed; z-index:10000; background:#2c3e50; border:2px solid #34495e; padding:6px; border-radius:8px; top:${rect.bottom + 5}px; left:${rect.left}px; box-shadow: 0px 8px 16px rgba(0,0,0,0.8); display:flex; flex-direction:column; align-items:center; gap:6px;`;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        canvas.style.cursor = 'crosshair';
+        canvas.style.borderRadius = '50%';
+        canvas.style.border = '2px solid #fff';
+        popup.appendChild(canvas);
+
+        const closeBtn = document.createElement('div');
+        closeBtn.innerText = 'FECHAR';
+        closeBtn.style.cssText = 'font-size:9px; color:#fff; text-align:center; font-weight:bold; cursor:pointer; background:#e74c3c; padding:4px 10px; border-radius:4px; width:100%; box-sizing:border-box;';
+        closeBtn.onclick = () => popup.remove();
+        popup.appendChild(closeBtn);
+
+        document.body.appendChild(popup);
+
+        const ctx = canvas.getContext('2d');
+        const center = size / 2;
+
+        for (let angle = 0; angle < 360; angle += 0.5) {
+            const startAngle = (angle - 1) * Math.PI / 180;
+            const endAngle = angle * Math.PI / 180;
+            ctx.beginPath();
+            ctx.moveTo(center, center);
+            ctx.arc(center, center, center, startAngle, endAngle);
+            ctx.closePath();
+            ctx.fillStyle = `hsl(${angle}, 100%, 50%)`;
+            ctx.fill();
+        }
+
+        const gradWhite = ctx.createRadialGradient(center, center, 0, center, center, center * 0.4);
+        gradWhite.addColorStop(0, 'rgba(255,255,255,1)');
+        gradWhite.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = gradWhite;
+        ctx.beginPath();
+        ctx.arc(center, center, center, 0, Math.PI * 2);
+        ctx.fill();
+        const gradBlack = ctx.createRadialGradient(center, center, center * 0.7, center, center, center);
+        gradBlack.addColorStop(0, 'rgba(0,0,0,0)');
+        gradBlack.addColorStop(1, 'rgba(0,0,0,1)');
+        ctx.fillStyle = gradBlack;
+        ctx.beginPath();
+        ctx.arc(center, center, center, 0, Math.PI * 2);
+        ctx.fill();
+
+        let isDragging = false;
+        const pickColor = (e) => {
+            const crect = canvas.getBoundingClientRect();
+            const x = e.clientX - crect.left;
+            const y = e.clientY - crect.top;
+
+            const dx = x - center;
+            const dy = y - center;
+            if (Math.sqrt(dx * dx + dy * dy) > center) return;
+            const p = ctx.getImageData(x, y, 1, 1).data;
+            const hex = "#" + (1 << 24 | p[0] << 16 | p[1] << 8 | p[2]).toString(16).slice(1);
+            callback(hex);
+        };
+
+        canvas.onmousedown = (e) => { isDragging = true; pickColor(e); };
+        canvas.onmousemove = (e) => { if (isDragging) pickColor(e); };
+        window.addEventListener('mouseup', () => { isDragging = false; }, { once: true });
+    };
+    const getMoveVideoUrlSync = (vidId) => {
+        if (!vidId) return null;
+        if (videoUrlCacheMove[vidId]) {
+            if (videoUrlCacheMove[vidId] === "loading") return null;
+            return videoUrlCacheMove[vidId];
+        }
+        videoUrlCacheMove[vidId] = "loading";
+        getLocalVideoURL(vidId).then(url => {
+            if (url) videoUrlCacheMove[vidId] = url;
+        });
+        return null;
+    };
+
+    let dynamicHighlightStyle = document.createElement('style');
+    document.head.appendChild(dynamicHighlightStyle);
+
+    const getSquareClass = (el) => {
+        const match = el.className.match(/square-\d{2}/);
+        return match ? match[0] : null;
+    };
+
+    const moveTrackerObserver = new MutationObserver((mutations) => {
+        mutations.forEach(mut => {
+            if (mut.type === 'attributes' && mut.attributeName === 'class') {
+                const el = mut.target;
+                if (el.classList && el.classList.contains('piece')) {
+                    const currentSq = getSquareClass(el);
+                    const oldSq = piecePositions.get(el);
+
+                    if (currentSq && oldSq && currentSq !== oldSq) {
+                        lastMoveSquares = [oldSq, currentSq];
+                    }
+                    if (currentSq) piecePositions.set(el, currentSq);
+                }
+            } else if (mut.type === 'childList') {
+                mut.addedNodes.forEach(node => {
+                    if (node.nodeType === 1 && node.classList && node.classList.contains('piece')) {
+                        const sq = getSquareClass(node);
+                        if (sq) piecePositions.set(node, sq);
+                    }
+                });
+                mut.removedNodes.forEach(node => {
+                    if (node.nodeType === 1 && node.classList && node.classList.contains('piece')) {
+                        piecePositions.delete(node);
+                    }
+                });
+            }
+        });
+    });
+    const initTracker = () => {
+        document.querySelectorAll('.piece').forEach(p => {
+            const sq = getSquareClass(p);
+            if (sq) piecePositions.set(p, sq);
+        });
+        document.querySelectorAll('.board, chess-board, [class*="chess-board"]').forEach(board => {
+            moveTrackerObserver.observe(board, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+        });
+    };
+
+    setTimeout(initTracker, 1500);
+
+    const syncActiveSlot = () => {
+        if (activeCustomMoveIndex >= 0 && savedCustomMoves[activeCustomMoveIndex]) {
+            savedCustomMoves[activeCustomMoveIndex] = JSON.parse(JSON.stringify(tempCustomSetup));
+            safeSetValue('saved_custom_moves', JSON.stringify(savedCustomMoves));
+
+            const galContainer = document.getElementById('custom-moves-saved-gallery');
+            if (galContainer) {
+                const thumb = galContainer.querySelector(`.custom-move-thumb[data-index="${activeCustomMoveIndex}"]`);
+                if (thumb) {
+                    thumb.style.background = tempCustomSetup.isGrad ?
+                    `linear-gradient(135deg, ${tempCustomSetup.c1}, ${tempCustomSetup.c2}, ${tempCustomSetup.c3})` : tempCustomSetup.sqColor;
+                    let img = thumb.querySelector('img.thumb-img');
+                    if (img && tempCustomSetup.imgB64) {
+                        img.src = tempCustomSetup.imgB64;
+                    } else if (!img && tempCustomSetup.imgB64) {
+                        thumb.innerHTML = `<img class="thumb-img" src="${tempCustomSetup.imgB64}" style="max-height:55%; max-width:80%; pointer-events:none;">
+                        <div class="set-hotkey" data-index="${activeCustomMoveIndex}" style="font-size:8px; background:rgba(0,0,0,0.6); padding:1px 4px; border-radius:2px; color:#fff; margin-top:3px; z-index:10;"
+                        title="Clique para definir atalho">${savedCustomMoves[activeCustomMoveIndex].hotkey ? savedCustomMoves[activeCustomMoveIndex].hotkey.toUpperCase() : '⌨️'}</div>
+                        <div class="del-custom-move" data-index="${activeCustomMoveIndex}" style="position:absolute; top:-2px; right:-2px; background:rgba(200,0,0,0.9); color:white; width:12px; height:12px; display:flex; align-items:center; justify-content:center; font-size:8px; cursor:pointer; border-radius:50%; z-index:10;"
+                        title="Deletar">✕</div>`;
+                        renderCustomMovesGallery();
+                    }
+                }
+            }
+        }
+    };
+    const renderCustomMovesGallery = () => {
+        const galContainer = document.getElementById('custom-moves-saved-gallery');
+        if (!galContainer) return;
+        let html = '<div style="display:grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top:4px;">';
+        savedCustomMoves.forEach((move, i) => {
+            const isSelected = i === activeCustomMoveIndex;
+            const hk = move.hotkey ? move.hotkey.toUpperCase() : '⌨️';
+            const bgVal = move.isGrad ? `linear-gradient(135deg, ${move.c1}, ${move.c2}, ${move.c3})` : move.sqColor;
+            html += `<div class="custom-move-thumb" data-index="${i}" style="height:42px; background:${bgVal}; border: 2px solid ${isSelected ? '#f1c40f' : '#222'}; border-radius:2px; cursor:pointer; position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                ${move.imgB64 ? `<img class="thumb-img" src="${move.imgB64}" style="max-height:55%; max-width:80%; pointer-events:none;">` : '<span style="font-size:10px;color:#fff;">COR</span>'}
+                <div class="set-hotkey" data-index="${i}" style="font-size:8px; background:rgba(0,0,0,0.6); padding:1px 4px; border-radius:2px; color:#fff; margin-top:3px; z-index:10;" title="Clique para definir atalho">${hk}</div>
+                <div class="del-custom-move" data-index="${i}" style="position:absolute; top:-2px; right:-2px; background:rgba(200,0,0,0.9); color:white; width:12px; height:12px; display:flex; align-items:center; justify-content:center; font-size:8px; cursor:pointer; border-radius:50%; z-index:10;" title="Deletar">✕</div>
+            </div>`;
+        });
+        html += '</div>';
+
+        galContainer.innerHTML = ttPolicy.createHTML(html);
+
+        galContainer.querySelectorAll('.set-hotkey').forEach(el => {
+            el.onclick = (e) => {
+                e.stopPropagation();
+                el.innerText = '...';
+                el.style.backgroundColor = '#f1c40f';
+                el.style.color = '#000';
+
+                const handler = (ev) => {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    let key = ev.key;
+                    if (key === ' ') key = 'Space';
+
+                    const idx = parseInt(el.getAttribute('data-index'));
+                    savedCustomMoves[idx].hotkey = key;
+                    safeSetValue('saved_custom_moves', JSON.stringify(savedCustomMoves));
+
+                    document.removeEventListener('keydown', handler);
+                    renderCustomMovesGallery();
+                };
+                document.addEventListener('keydown', handler);
+            };
+        });
+
+        galContainer.querySelectorAll('.custom-move-thumb').forEach(el => {
+            el.onclick = (e) => {
+                if (e.target.classList.contains('del-custom-move') || e.target.classList.contains('set-hotkey')) return;
+                const idx = parseInt(el.getAttribute('data-index'));
+
+                if (activeCustomMoveIndex === idx) {
+                    safeSetValue('active_custom_move_index', -1);
+                    activeCustomMoveIndex = -1;
+                } else {
+                    safeSetValue('active_custom_move_index', idx);
+                    activeCustomMoveIndex = idx;
+                    tempCustomSetup = JSON.parse(JSON.stringify(savedCustomMoves[idx]));
+                    if(tempCustomSetup.isGrad === undefined) { tempCustomSetup.isGrad = false; tempCustomSetup.c1 = tempCustomSetup.sqColor; tempCustomSetup.c2 = tempCustomSetup.sqColor; tempCustomSetup.c3 = tempCustomSetup.sqColor; }
+
+                    if (document.getElementById('wk-sq-cp')) document.getElementById('wk-sq-cp').value = tempCustomSetup.sqColor;
+                    if (document.getElementById('wk-sq-cp2')) document.getElementById('wk-sq-cp2').style.backgroundColor = tempCustomSetup.sqColor;
+                    if (document.getElementById('wk-sq-hex')) document.getElementById('wk-sq-hex').value = tempCustomSetup.sqColor;
+                    if (document.getElementById('wk-grad-toggle')) {
+                        document.getElementById('wk-grad-toggle').checked = tempCustomSetup.isGrad;
+                        document.getElementById('wk-grad-container').style.display = tempCustomSetup.isGrad ? 'flex' : 'none';
+                        document.getElementById('wk-c1').value = tempCustomSetup.c1;
+                        document.getElementById('wk-c2').value = tempCustomSetup.c2;
+                        document.getElementById('wk-c3').value = tempCustomSetup.c3;
+                    }
+
+                    if (document.getElementById('wk-rip-cp')) document.getElementById('wk-rip-cp').value = tempCustomSetup.rippleColor;
+                    if (document.getElementById('wk-rip-cp2')) document.getElementById('wk-rip-cp2').style.backgroundColor = tempCustomSetup.rippleColor;
+                    if (document.getElementById('wk-rip-hex')) document.getElementById('wk-rip-hex').value = tempCustomSetup.rippleColor;
+                    if (document.getElementById('wk-use-rip')) document.getElementById('wk-use-rip').checked = tempCustomSetup.useRipples;
+                    if (document.getElementById('wk-size')) document.getElementById('wk-size').value = tempCustomSetup.size;
+                    if (document.getElementById('wk-dist')) document.getElementById('wk-dist').value = tempCustomSetup.dist;
+                    if (document.getElementById('wk-speed')) document.getElementById('wk-speed').value = tempCustomSetup.speed;
+                    if (document.getElementById('wk-pos')) document.getElementById('wk-pos').value = tempCustomSetup.pos;
+                    updateLivePreview();
+                }
+                renderCustomMovesGallery();
+            };
+        });
+        galContainer.querySelectorAll('.del-custom-move').forEach(el => {
+            el.onclick = (e) => {
+                const idx = parseInt(el.getAttribute('data-index'));
+                savedCustomMoves.splice(idx, 1);
+                safeSetValue('saved_custom_moves', JSON.stringify(savedCustomMoves));
+                if (activeCustomMoveIndex === idx) {
+                    safeSetValue('active_custom_move_index', -1);
+                    activeCustomMoveIndex = -1;
+                } else if (activeCustomMoveIndex > idx) {
+                    activeCustomMoveIndex--;
+                    safeSetValue('active_custom_move_index', activeCustomMoveIndex);
+                }
+                renderCustomMovesGallery();
+            };
+        });
+    };
+
+    const updateLivePreview = () => {
+        const prev = document.getElementById('wk-live-preview');
+        if (!prev) return;
+
+        prev.innerHTML = '';
+        const mode = document.documentElement.getAttribute('data-mode') || 'solid';
+        const rgbStr = customHexToRgb(tempCustomSetup.sqColor);
+        const bgDiv = document.createElement('div');
+        if (tempCustomSetup.isGrad) {
+            if (mode === 'solid') {
+                bgDiv.style.cssText = `position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: linear-gradient(135deg, ${tempCustomSetup.c1}, ${tempCustomSetup.c2}, ${tempCustomSetup.c3}); opacity: 0.8;`;
+            } else {
+                bgDiv.style.cssText = `position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: transparent; background-image: radial-gradient(circle, rgba(${customHexToRgb(tempCustomSetup.c1)}, 1) 0%, rgba(${customHexToRgb(tempCustomSetup.c2)}, 0.4) 50%, rgba(${customHexToRgb(tempCustomSetup.c3)}, 0) 85%);`;
+            }
+        } else {
+            if (mode === 'solid') {
+                bgDiv.style.cssText = `position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(${rgbStr}, 0.8);`;
+            } else {
+                bgDiv.style.cssText = `position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: transparent; background-image: radial-gradient(circle, rgba(${rgbStr}, 1) 0%, rgba(${rgbStr}, 0.4) 50%, rgba(${rgbStr}, 0) 85%);`;
+            }
+        }
+        prev.appendChild(bgDiv);
+        if (tempCustomSetup.imgB64) {
+            const s = tempCustomSetup.size;
+            const hs = s / 2;
+            let posCSS = '';
+            switch (tempCustomSetup.pos) {
+                case 'tr': posCSS = `top: -${hs}%; right: -${hs}%;`; break;
+                case 'tl': posCSS = `top: -${hs}%; left: -${hs}%;`; break;
+                case 'br': posCSS = `bottom: -${hs}%; right: -${hs}%;`; break;
+                case 'bl': posCSS = `bottom: -${hs}%; left: -${hs}%;`; break;
+            }
+
+            const iconWrapper = document.createElement('div');
+            iconWrapper.style.cssText = `position: absolute; width: ${s}%; height: ${s}%; ${posCSS} z-index: 10; pointer-events: none;`;
+
+            if (tempCustomSetup.useRipples) {
+                const speedMap = { 'slow': '2s', 'med': '1.2s', 'fast': '0.7s' };
+                const dur = speedMap[tempCustomSetup.speed] || '1.2s';
+                const delay2 = speedMap[tempCustomSetup.speed] === '2s' ? '1s' : (speedMap[tempCustomSetup.speed] === '1.2s' ? '0.6s' : '0.35s');
+
+                const rip1 = document.createElement('div');
+                rip1.style.cssText = `position: absolute; top: 50%; left: 50%; width: 100%; height: 100%; border-radius: 50%; border: 2px solid ${tempCustomSetup.rippleColor}; transform: translate(-50%, -50%); animation: fakeBrilliantRipple ${dur} infinite ease-out; --ripple-scale: ${tempCustomSetup.dist}; box-sizing: border-box;`;
+
+                const rip2 = document.createElement('div');
+                rip2.style.cssText = `position: absolute; top: 50%; left: 50%; width: 100%; height: 100%; border-radius: 50%; border: 2px solid ${tempCustomSetup.rippleColor}; transform: translate(-50%, -50%); animation: fakeBrilliantRipple ${dur} infinite ease-out ${delay2}; --ripple-scale: ${tempCustomSetup.dist}; box-sizing: border-box;`;
+
+                iconWrapper.appendChild(rip1);
+                iconWrapper.appendChild(rip2);
+            }
+
+            const img = document.createElement('img');
+            img.src = tempCustomSetup.imgB64;
+            img.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; z-index: 2; filter: drop-shadow(0px 2px 3px rgba(0,0,0,0.5));';
+
+            iconWrapper.appendChild(img);
+            prev.appendChild(iconWrapper);
+        }
+    };
+    const renderMoveGalleries = () => {
+        const galContainer = document.getElementById('move-media-galleries');
+        if (!galContainer) return;
+        const activeVidIdx = GM_getValue('active_move_video_index', 0);
+        const activeImgIdx = GM_getValue('active_move_image_index', 0);
+        let vidHtml = '<div style="display:grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top:4px;">';
+        savedMoveVideos.forEach((vidId, i) => {
+            const isSelected = i === activeVidIdx;
+            vidHtml += `<div class="move-vid-thumb" data-index="${i}" style="height:30px; background:#444; border: 2px solid ${isSelected ? '#3498db' : '#222'}; border-radius:2px; cursor:pointer; font-size:8px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;">
+                V${i+1}
+                <div class="del-move-vid" data-index="${i}" style="position:absolute; top:0; right:0; background:rgba(200,0,0,0.8); color:white; width:12px; height:12px; display:flex; align-items:center; justify-content:center; font-size:8px; cursor:pointer;" title="Deletar">✕</div>
+            </div>`;
+        });
+        vidHtml += '</div>';
+
+        let imgHtml = '<div style="display:grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top:4px;">';
+        savedMoveImages.forEach((imgB64, i) => {
+            const isSelected = i === activeImgIdx;
+            imgHtml += `<div class="move-img-thumb" data-index="${i}" style="height:30px; background-image:url('${imgB64}'); background-size:cover; background-position:center; border: 2px solid ${isSelected ? '#3498db' : '#222'}; border-radius:2px; cursor:pointer; position:relative;">
+                <div class="del-move-img" data-index="${i}" style="position:absolute; top:0; right:0; background:rgba(200,0,0,0.8); color:white; width:12px; height:12px; display:flex; align-items:center; justify-content:center; font-size:8px; cursor:pointer;" title="Deletar">✕</div>
+            </div>`;
+        });
+        imgHtml += '</div>';
+
+        galContainer.innerHTML = ttPolicy.createHTML(`
+            <div style="font-size:9px; color:#aaa; margin-top:4px;">📼 Vídeos Salvos (${savedMoveVideos.length}/8):</div>
+            <input type="file" id="new-move-video" accept="video/mp4,video/webm" style="font-size:8px; width:100%; display:${savedMoveVideos.length >= 8 ? 'none' : 'block'}; margin-bottom:2px;">
+            ${vidHtml}
+            <div style="font-size:9px; color:#aaa; margin-top:8px;">🖼️ Imagens Salvas (${savedMoveImages.length}/8):</div>
+            <input type="file" id="new-move-img" accept="image/*" style="font-size:8px; width:100%; display:${savedMoveImages.length >= 8 ? 'none' : 'block'}; margin-bottom:2px;">
+            ${imgHtml}
+        `);
+        const vidInput = document.getElementById('new-move-video');
+        if (vidInput) {
+            vidInput.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const vidId = "LOCAL_DB_MOVE_VIDEO_" + Date.now();
+                try {
+                    await saveLocalVideo(vidId, file);
+                    savedMoveVideos.push(vidId);
+                    safeSetValue('saved_move_videos', JSON.stringify(savedMoveVideos));
+                    safeSetValue('active_move_video_index', savedMoveVideos.length - 1);
+                    renderMoveGalleries();
+                } catch (err) {
+                    alert("Erro ao salvar vídeo.");
+                }
+            };
+        }
+
+        const imgInput = document.getElementById('new-move-img');
+        if (imgInput) {
+            imgInput.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    savedMoveImages.push(ev.target.result);
+                    safeSetValue('saved_move_images', JSON.stringify(savedMoveImages));
+                    safeSetValue('active_move_image_index', savedMoveImages.length - 1);
+                    renderMoveGalleries();
+                };
+                reader.readAsDataURL(file);
+            };
+        }
+
+        galContainer.querySelectorAll('.move-vid-thumb').forEach(el => {
+            el.onclick = (e) => {
+                if (e.target.classList.contains('del-move-vid')) return;
+                safeSetValue('active_move_video_index', parseInt(el.getAttribute('data-index')));
+                renderMoveGalleries();
+            };
+        });
+        galContainer.querySelectorAll('.del-move-vid').forEach(el => {
+            el.onclick = (e) => {
+                const idx = parseInt(el.getAttribute('data-index'));
+                const vidId = savedMoveVideos[idx];
+                deleteLocalVideo(vidId);
+                savedMoveVideos.splice(idx, 1);
+                safeSetValue('saved_move_videos', JSON.stringify(savedMoveVideos));
+                if (GM_getValue('active_move_video_index') >= savedMoveVideos.length) {
+                    safeSetValue('active_move_video_index', Math.max(0, savedMoveVideos.length - 1));
+                }
+                renderMoveGalleries();
+            };
+        });
+
+        galContainer.querySelectorAll('.move-img-thumb').forEach(el => {
+            el.onclick = (e) => {
+                if (e.target.classList.contains('del-move-img')) return;
+                safeSetValue('active_move_image_index', parseInt(el.getAttribute('data-index')));
+                renderMoveGalleries();
+            };
+        });
+        galContainer.querySelectorAll('.del-move-img').forEach(el => {
+            el.onclick = (e) => {
+                const idx = parseInt(el.getAttribute('data-index'));
+                savedMoveImages.splice(idx, 1);
+                safeSetValue('saved_move_images', JSON.stringify(savedMoveImages));
+                if (GM_getValue('active_move_image_index') >= savedMoveImages.length) {
+                    safeSetValue('active_move_image_index', Math.max(0, savedMoveImages.length - 1));
+                }
+                renderMoveGalleries();
+            };
+        });
+    };
+
+    const ensureExtraMoveUI = () => {
+        const uiSection = document.getElementById('move-highlight-ui-section');
+        if (uiSection && !document.getElementById('xadrez-legal-extra-move-ui')) {
+
+            const oldVidInput = document.getElementById('move-video-upload');
+            const oldImgInput = document.getElementById('move-image-upload');
+            if (oldVidInput) oldVidInput.style.display = 'none';
+            if (oldImgInput) oldImgInput.style.display = 'none';
+
+            const extraDiv = document.createElement('div');
+            extraDiv.id = 'xadrez-legal-extra-move-ui';
+            const keepNative = GM_getValue('keep_native_highlights', true);
+            const maskSize = GM_getValue('move_mask_size', 100);
+            const isRandom = GM_getValue('random_move_media', false);
+            const moveOpActive = GM_getValue('move_opacity_active', false);
+            const moveOpValue = GM_getValue('move_opacity_value', 80);
+            extraDiv.innerHTML = ttPolicy.createHTML(`
+                <label class="control-group" style="font-weight:bold; flex-direction:row; cursor:pointer; margin-top:8px; color:#3498db;">
+                    <input type="checkbox" id="toggle-keep-native" ${keepNative ? 'checked' : ''}> Marcação do Jogo por Cima
+                </label>
+
+                <label class="control-group" style="font-weight:bold; flex-direction:row; cursor:pointer; margin-top:6px; color:#9b59b6;">
+                    <input type="checkbox" id="toggle-move-opacity" ${moveOpActive ? 'checked' : ''}> Ativar Transparência (Mídia/Efeito)
+                </label>
+                <div style="font-size:9px; margin-top:2px; align-items:center; justify-content:space-between; display:${moveOpActive ? 'flex' : 'none'};" id="move-op-container">
+                    <span>Opacidade:</span> <span id="val-move-opacity">${moveOpValue}%</span>
+                </div>
+                <input type="range" id="slider-move-opacity" min="0" max="100" value="${moveOpValue}" style="width:100%; margin-bottom:4px; display:${moveOpActive ? 'block' : 'none'};">
+
+                <div style="font-size:9px; margin-top:6px; display:flex; align-items:center; justify-content:space-between;">
+                    <span>⭕ Círculo (Luneta):</span> <span id="val-mask-size">${maskSize}%</span>
+                </div>
+                <input type="range" id="slider-mask-size" min="0" max="100" value="${maskSize}" style="width:100%; margin-bottom:2px;">
+
+                <label class="control-group" style="font-weight:bold; flex-direction:row; cursor:pointer; margin-top:6px; color:#f1c40f;">
+                    <input type="checkbox" id="toggle-random-media" ${isRandom ? 'checked' : ''}> 🔀 Aleatório a cada Lance
+                </label>
+
+                <div id="move-media-galleries" style="margin-top:6px; border-top: 0.5px solid #444; padding-top:4px;"></div>
+
+                <div style="margin-top:10px; border:1px solid #f1c40f; border-radius:4px; padding:6px; background:rgba(241, 196, 15, 0.05);">
+                    <div style="font-weight:bold; font-size:10px; color:#f1c40f; text-align:center; margin-bottom:6px;">✨ OFICINA DE LANCES PERSONALIZADOS</div>
+
+                    <label class="control-group" style="font-size:9px; font-weight:bold; flex-direction:row; cursor:pointer; margin-bottom:6px; color:#f1c40f; display:flex; align-items:center; justify-content:center;">
+                        <input type="checkbox" id="toggle-random-custom" ${GM_getValue('random_custom_move', false) ? 'checked' : ''}> 🔀 Sortear Slots Aleatórios
+                    </label>
+
+                    <div style="font-size:9px; color:#ccc;">Imagem do Canto (Ex: Ícone !!):</div>
+                    <input type="file" id="wk-img" accept="image/*" style="font-size:8px; width:100%; margin-bottom:6px;">
+
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <span style="font-size:9px;">Cor da Casa (Sólida):</span>
+                        <div style="display:flex; gap:2px; align-items:center;">
+                            <input type="color" id="wk-sq-cp" value="${tempCustomSetup.sqColor}" style="width:20px; height:15px; padding:0; border:none; cursor:pointer;" title="Cor Padrão (Navegador)">
+                            <div id="wk-sq-cp2" style="width:20px; height:15px; background-color:${tempCustomSetup.sqColor}; border:1px solid #ccc; cursor:crosshair; border-radius:2px;" title="Roda de Cor (Próprio Script)"></div>
+                            <input type="text" id="wk-sq-hex" value="${tempCustomSetup.sqColor}" style="width:45px; font-size:8px; padding:1px;">
+                        </div>
+                    </div>
+
+                    <label style="font-size:9px; display:flex; margin-top:2px; color:#e67e22; align-items:center; gap:3px;">
+                        <input type="checkbox" id="wk-grad-toggle" ${tempCustomSetup.isGrad ? 'checked' : ''}> 🌈 Usar Gradiente Triplo
+                    </label>
+                    <div id="wk-grad-container" style="display:${tempCustomSetup.isGrad ? 'flex' : 'none'}; gap:2px; margin-top:2px; margin-bottom:4px;">
+                        <input type="color" id="wk-c1" value="${tempCustomSetup.c1}" style="width:100%; height:15px; padding:0; border:none;">
+                        <input type="color" id="wk-c2" value="${tempCustomSetup.c2}" style="width:100%; height:15px; padding:0; border:none;">
+                        <input type="color" id="wk-c3" value="${tempCustomSetup.c3}" style="width:100%; height:15px; padding:0; border:none;">
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; margin-top:6px;">
+                        <span style="font-size:9px;">Ativar Ondinhas:</span>
+                        <input type="checkbox" id="wk-use-rip" ${tempCustomSetup.useRipples ? 'checked' : ''}>
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <span style="font-size:9px;">Cor das Ondinhas:</span>
+                        <div style="display:flex; gap:2px; align-items:center;">
+                            <input type="color" id="wk-rip-cp" value="${tempCustomSetup.rippleColor}" style="width:20px; height:15px; padding:0; border:none; cursor:pointer;" title="Cor Padrão (Navegador)">
+                            <div id="wk-rip-cp2" style="width:20px; height:15px; background-color:${tempCustomSetup.rippleColor}; border:1px solid #ccc; cursor:crosshair; border-radius:2px;" title="Roda de Cor (Próprio Script)"></div>
+                            <input type="text" id="wk-rip-hex" value="${tempCustomSetup.rippleColor}" style="width:45px; font-size:8px; padding:1px;">
+                        </div>
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+                        <span style="font-size:9px;">Tamanho da Img:</span>
+                        <input type="range" id="wk-size" min="10" max="60" value="${tempCustomSetup.size}" style="width:60px;">
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+                        <span style="font-size:9px;">Distância Ondinha:</span>
+                        <input type="range" id="wk-dist" min="1.5" max="5.0" step="0.1" value="${tempCustomSetup.dist}" style="width:60px;">
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+                        <span style="font-size:9px;">Veloc. Ondinha:</span>
+                        <select id="wk-speed" style="font-size:8px; width:65px; background:#222; color:#fff; border:1px solid #444;">
+                            <option value="slow" ${tempCustomSetup.speed === 'slow' ? 'selected' : ''}>Lenta</option>
+                            <option value="med" ${tempCustomSetup.speed === 'med' ? 'selected' : ''}>Média</option>
+                            <option value="fast" ${tempCustomSetup.speed === 'fast' ? 'selected' : ''}>Rápida</option>
+                         </select>
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <span style="font-size:9px;">Posição:</span>
+                        <select id="wk-pos" style="font-size:8px; width:65px; background:#222; color:#fff; border:1px solid #444;">
+                            <option value="tr" ${tempCustomSetup.pos === 'tr' ? 'selected' : ''}>Sup. Direito</option>
+                            <option value="tl" ${tempCustomSetup.pos === 'tl' ? 'selected' : ''}>Sup. Esquerd</option>
+                            <option value="br" ${tempCustomSetup.pos === 'br' ? 'selected' : ''}>Inf. Direito</option>
+                            <option value="bl" ${tempCustomSetup.pos === 'bl' ? 'selected' : ''}>Inf. Esquerd</option>
+                        </select>
+                    </div>
+
+                    <div style="text-align:center; margin-bottom:6px; margin-top:8px;">
+                        <div style="font-size:8px; color:#aaa; margin-bottom:2px;">Preview em Tempo Real (Ajusta c/ seu Radial/Sólido):</div>
+                        <div id="wk-live-preview" style="width:60px; height:60px; background:#555; margin:0 auto; position:relative; overflow:visible;"></div>
+                    </div>
+
+                    <button id="btn-save-custom-move" style="width:100%; font-size:9px; background:#f1c40f; color:#000; border:none; padding:4px; font-weight:bold; cursor:pointer; border-radius:2px;">➕ SALVAR LANCE EFEITO</button>
+
+                    <div style="font-size:8px; color:#aaa; margin-top:6px; text-align:center;">Slots Salvos (Clique para Ativar/Editar):</div>
+                    <div id="custom-moves-saved-gallery"></div>
+                </div>
+            `);
+            uiSection.appendChild(extraDiv);
+
+            document.getElementById('toggle-keep-native').onchange = (e) => { safeSetValue('keep_native_highlights', e.target.checked); };
+
+            document.getElementById('toggle-move-opacity').onchange = (e) => {
+                const active = e.target.checked;
+                safeSetValue('move_opacity_active', active);
+                document.getElementById('slider-move-opacity').style.display = active ? 'block' : 'none';
+                document.getElementById('move-op-container').style.display = active ? 'flex' : 'none';
+            };
+
+            document.getElementById('slider-move-opacity').oninput = (e) => {
+                safeSetValue('move_opacity_value', e.target.value);
+                document.getElementById('val-move-opacity').innerText = e.target.value + '%';
+            };
+
+            document.getElementById('slider-mask-size').oninput = (e) => {
+                safeSetValue('move_mask_size', e.target.value);
+                document.getElementById('val-mask-size').innerText = e.target.value + '%';
+            };
+
+            document.getElementById('toggle-random-media').onchange = (e) => { safeSetValue('random_move_media', e.target.checked); };
+
+            renderMoveGalleries();
+
+            const toggleRandomCustom = document.getElementById('toggle-random-custom');
+            if (toggleRandomCustom) toggleRandomCustom.onchange = (e) => { safeSetValue('random_custom_move', e.target.checked); };
+            const linkColorInputs = (cp1Id, customBtnId, hexId, stateKey) => {
+                const cp1 = document.getElementById(cp1Id);
+                const customBtn = document.getElementById(customBtnId);
+                const hex = document.getElementById(hexId);
+
+                const update = (val) => {
+                    cp1.value = val;
+                    customBtn.style.backgroundColor = val;
+                    hex.value = val;
+                    tempCustomSetup[stateKey] = val;
+                    updateLivePreview();
+                    syncActiveSlot();
+                };
+
+                cp1.oninput = (e) => update(e.target.value);
+                hex.oninput = (e) => update(e.target.value);
+
+                customBtn.onclick = () => {
+                    showCustomColorWheel(customBtn, (newHex) => {
+                        update(newHex);
+                    });
+                };
+            };
+
+            linkColorInputs('wk-sq-cp', 'wk-sq-cp2', 'wk-sq-hex', 'sqColor');
+            linkColorInputs('wk-rip-cp', 'wk-rip-cp2', 'wk-rip-hex', 'rippleColor');
+            document.getElementById('wk-grad-toggle').onchange = (e) => {
+                tempCustomSetup.isGrad = e.target.checked;
+                document.getElementById('wk-grad-container').style.display = tempCustomSetup.isGrad ? 'flex' : 'none';
+                updateLivePreview(); syncActiveSlot();
+            };
+            document.getElementById('wk-c1').oninput = (e) => { tempCustomSetup.c1 = e.target.value; updateLivePreview(); syncActiveSlot(); };
+            document.getElementById('wk-c2').oninput = (e) => { tempCustomSetup.c2 = e.target.value; updateLivePreview(); syncActiveSlot(); };
+            document.getElementById('wk-c3').oninput = (e) => { tempCustomSetup.c3 = e.target.value; updateLivePreview(); syncActiveSlot(); };
+
+            document.getElementById('wk-use-rip').onchange = (e) => { tempCustomSetup.useRipples = e.target.checked; updateLivePreview(); syncActiveSlot(); };
+            document.getElementById('wk-img').onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => { tempCustomSetup.imgB64 = ev.target.result; updateLivePreview(); syncActiveSlot(); };
+                reader.readAsDataURL(file);
+            };
+
+            document.getElementById('wk-size').oninput = (e) => { tempCustomSetup.size = parseInt(e.target.value); updateLivePreview(); syncActiveSlot(); };
+            document.getElementById('wk-dist').oninput = (e) => { tempCustomSetup.dist = parseFloat(e.target.value); updateLivePreview(); syncActiveSlot(); };
+            document.getElementById('wk-speed').onchange = (e) => { tempCustomSetup.speed = e.target.value; updateLivePreview(); syncActiveSlot(); };
+            document.getElementById('wk-pos').onchange = (e) => { tempCustomSetup.pos = e.target.value; updateLivePreview(); syncActiveSlot(); };
+            document.getElementById('btn-save-custom-move').onclick = () => {
+                savedCustomMoves.push(JSON.parse(JSON.stringify(tempCustomSetup)));
+                safeSetValue('saved_custom_moves', JSON.stringify(savedCustomMoves));
+                activeCustomMoveIndex = savedCustomMoves.length - 1;
+                safeSetValue('active_custom_move_index', activeCustomMoveIndex);
+                renderCustomMovesGallery();
+            };
+
+            renderCustomMovesGallery();
+            updateLivePreview();
+        }
+    };
+    setInterval(() => {
+        ensureExtraMoveUI();
+
+        const useVid = GM_getValue('use_move_video', false);
+        const useImg = GM_getValue('use_move_image', false);
+
+        const activeVidIdx = GM_getValue('active_move_video_index', 0);
+        const activeImgIdx = GM_getValue('active_move_image_index', 0);
+
+        let activeVidId = savedMoveVideos[activeVidIdx] || null;
+        let activeImgData = savedMoveImages[activeImgIdx] || null;
+
+        let currentMoveVideoUrl = getMoveVideoUrlSync(activeVidId);
+
+        const keepNativeHighlights = GM_getValue('keep_native_highlights', true);
+        const maskSize = GM_getValue('move_mask_size', 100);
+        const isRandom = GM_getValue('random_move_media', false);
+
+        const moveOpActive = GM_getValue('move_opacity_active', false);
+        const moveOpValue = GM_getValue('move_opacity_value', 80);
+
+        const currentCustomMove = (activeCustomMoveIndex >= 0 && savedCustomMoves[activeCustomMoveIndex]) ? savedCustomMoves[activeCustomMoveIndex] : null;
+        const isCustomActive = currentCustomMove !== null;
+
+        const isActive = (isCustomActive || (useVid && currentMoveVideoUrl) || (useImg && activeImgData));
+        if (piecePositions.size === 0 && document.querySelector('.piece')) initTracker();
+
+        if (lastMoveSquares.length === 2) {
+            const targetSquares = lastMoveSquares.join(',');
+            if (targetSquares !== lastRenderedMoveKey) {
+                lastRenderedMoveKey = targetSquares;
+                const isRandomCustom = GM_getValue('random_custom_move', false);
+                let hasRandomized = false;
+
+                if (isRandomCustom && savedCustomMoves.length > 0) {
+                    const nextIndex = Math.floor(Math.random() * savedCustomMoves.length);
+                    safeSetValue('active_custom_move_index', nextIndex);
+                    activeCustomMoveIndex = nextIndex;
+
+                    tempCustomSetup = JSON.parse(JSON.stringify(savedCustomMoves[nextIndex]));
+                    if(tempCustomSetup.isGrad === undefined) { tempCustomSetup.isGrad = false; tempCustomSetup.c1 = tempCustomSetup.sqColor;
+                    tempCustomSetup.c2 = tempCustomSetup.sqColor; tempCustomSetup.c3 = tempCustomSetup.sqColor; }
+
+                    if (document.getElementById('wk-sq-cp')) document.getElementById('wk-sq-cp').value = tempCustomSetup.sqColor;
+                    if (document.getElementById('wk-sq-cp2')) document.getElementById('wk-sq-cp2').style.backgroundColor = tempCustomSetup.sqColor;
+                    if (document.getElementById('wk-sq-hex')) document.getElementById('wk-sq-hex').value = tempCustomSetup.sqColor;
+                    if (document.getElementById('wk-grad-toggle')) {
+                        document.getElementById('wk-grad-toggle').checked = tempCustomSetup.isGrad;
+                        document.getElementById('wk-grad-container').style.display = tempCustomSetup.isGrad ? 'flex' : 'none';
+                        document.getElementById('wk-c1').value = tempCustomSetup.c1;
+                        document.getElementById('wk-c2').value = tempCustomSetup.c2;
+                        document.getElementById('wk-c3').value = tempCustomSetup.c3;
+                    }
+
+                    if (document.getElementById('wk-rip-cp')) document.getElementById('wk-rip-cp').value = tempCustomSetup.rippleColor;
+                    if (document.getElementById('wk-rip-cp2')) document.getElementById('wk-rip-cp2').style.backgroundColor = tempCustomSetup.rippleColor;
+                    if (document.getElementById('wk-rip-hex')) document.getElementById('wk-rip-hex').value = tempCustomSetup.rippleColor;
+                    if (document.getElementById('wk-use-rip')) document.getElementById('wk-use-rip').checked = tempCustomSetup.useRipples;
+                    if (document.getElementById('wk-size')) document.getElementById('wk-size').value = tempCustomSetup.size;
+                    if (document.getElementById('wk-dist')) document.getElementById('wk-dist').value = tempCustomSetup.dist;
+                    if (document.getElementById('wk-speed')) document.getElementById('wk-speed').value = tempCustomSetup.speed;
+                    if (document.getElementById('wk-pos')) document.getElementById('wk-pos').value = tempCustomSetup.pos;
+
+                    updateLivePreview();
+                    renderCustomMovesGallery();
+                    hasRandomized = true;
+                } else if (!isCustomActive && isRandom) {
+                    if (useVid && savedMoveVideos.length > 0) {
+                        safeSetValue('active_move_video_index', Math.floor(Math.random() * savedMoveVideos.length));
+                    }
+                    if (useImg && savedMoveImages.length > 0) {
+                        safeSetValue('active_move_image_index', Math.floor(Math.random() * savedMoveImages.length));
+                    }
+                    renderMoveGalleries();
+                    hasRandomized = true;
+                }
+
+                if (hasRandomized) return;
+            }
+
+            if (isActive) {
+                if (!keepNativeHighlights) {
+                    dynamicHighlightStyle.innerHTML = `
+                        .highlight.${lastMoveSquares[0]}, .highlight.${lastMoveSquares[1]} {
+                            display: none !important;
+                            opacity: 0 !important;
+                        }
+                    `;
+                } else {
+                    dynamicHighlightStyle.innerHTML = `
+                        .highlight.${lastMoveSquares[0]}, .highlight.${lastMoveSquares[1]} {
+                            z-index: 6 !important;
+                        }
+                    `;
+                }
+            } else {
+                dynamicHighlightStyle.innerHTML = '';
+            }
+
+            document.querySelectorAll('.board, chess-board, [class*="chess-board"]').forEach(board => {
+                let fxLayer = board.querySelector('#xadrez-legal-move-layer');
+
+                if (!isActive) {
+                    if (fxLayer) fxLayer.remove();
+                    return;
+                }
+
+                const currentMode = document.documentElement.getAttribute('data-mode') || 'solid';
+                const opacityStr = moveOpActive ? `opacity: ${moveOpValue / 100} !important;` : '';
+
+                let renderKey = targetSquares;
+                if (isCustomActive) {
+                    renderKey += "_custom_" + currentMode + "_" + activeCustomMoveIndex + "_" + moveOpActive + "_" + moveOpValue + "_" + JSON.stringify(currentCustomMove);
+                } else {
+                    renderKey += "_media_" + maskSize + "_" + activeVidIdx + "_" + activeImgIdx + "_" + moveOpActive + "_" + moveOpValue;
+                }
+
+                const currentRenderedKey = fxLayer ? fxLayer.dataset.renderKey : '';
+
+                if (currentRenderedKey !== renderKey) {
+                    if (fxLayer) fxLayer.remove();
+                    fxLayer = document.createElement('div');
+                    fxLayer.id = 'xadrez-legal-move-layer';
+                    fxLayer.dataset.renderKey = renderKey;
+
+                    const overflowStyle = isCustomActive ? 'visible' : 'hidden';
+                    fxLayer.style.cssText = `position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; z-index: 5 !important; pointer-events: none !important; overflow: ${overflowStyle} !important;`;
+
+                    const radiusClip = (maskSize / 2) + '%';
+                    lastMoveSquares.forEach((sqClass, idx) => {
+                        const sqDiv = document.createElement('div');
+                        sqDiv.className = sqClass;
+                        sqDiv.style.cssText = `position: absolute !important; width: 12.5% !important; height: 12.5% !important; pointer-events: none !important; display: flex; align-items: center; justify-content: center; overflow: ${overflowStyle} !important;`;
+
+                        if (isCustomActive) {
+                            const wrapperLayer = document.createElement('div');
+                            wrapperLayer.style.cssText = `position: relative; width: 100%; height: 100%; pointer-events: none; ${opacityStr}`;
+
+                            const bgDiv = document.createElement('div');
+                            const rgbStr = customHexToRgb(currentCustomMove.sqColor);
+
+                            if (currentCustomMove.isGrad) {
+                                if (currentMode === 'solid') {
+                                    bgDiv.style.cssText = `position: absolute; width: 100%; height: 100%; background-image: linear-gradient(135deg, ${currentCustomMove.c1}, ${currentCustomMove.c2}, ${currentCustomMove.c3}); border-radius: 2px; opacity: 0.85;`;
+                                } else {
+                                    bgDiv.style.cssText = `position: absolute; width: 100%; height: 100%; background-color: transparent; background-image: radial-gradient(circle, rgba(${customHexToRgb(currentCustomMove.c1)}, 1) 0%, rgba(${customHexToRgb(currentCustomMove.c2)}, 0.4) 50%, rgba(${customHexToRgb(currentCustomMove.c3)}, 0) 85%); border-radius: 2px;`;
+                                }
+                            } else {
+                                if (currentMode === 'solid') {
+                                    bgDiv.style.cssText = `position: absolute; width: 100%; height: 100%; background-color: rgba(${rgbStr}, 0.8); border-radius: 2px;`;
+                                } else {
+                                    bgDiv.style.cssText = `position: absolute; width: 100%; height: 100%; background-color: transparent; background-image: radial-gradient(circle, rgba(${rgbStr}, 1) 0%, rgba(${rgbStr}, 0.4) 50%, rgba(${rgbStr}, 0) 85%); border-radius: 2px;`;
+                                }
+                            }
+                            wrapperLayer.appendChild(bgDiv);
+                            if (idx === 1 && currentCustomMove.imgB64) {
+                                const s = currentCustomMove.size;
+                                const hs = s / 2;
+                                let posCSS = '';
+                                switch (currentCustomMove.pos) {
+                                    case 'tr': posCSS = `top: -${hs}%; right: -${hs}%;`; break;
+                                    case 'tl': posCSS = `top: -${hs}%; left: -${hs}%;`; break;
+                                    case 'br': posCSS = `bottom: -${hs}%; right: -${hs}%;`; break;
+                                    case 'bl': posCSS = `bottom: -${hs}%; left: -${hs}%;`; break;
+                                }
+
+                                const iconWrapper = document.createElement('div');
+                                iconWrapper.style.cssText = `position: absolute; width: ${s}%; height: ${s}%; ${posCSS} z-index: 10; pointer-events: none;`;
+                                if (currentCustomMove.useRipples !== false) {
+                                    const speedMap = { 'slow': '2s', 'med': '1.2s', 'fast': '0.7s' };
+                                    const dur = speedMap[currentCustomMove.speed] || '1.2s';
+                                    const delay2 = speedMap[currentCustomMove.speed] === '2s' ? '1s' : (speedMap[currentCustomMove.speed] === '1.2s' ? '0.6s' : '0.35s');
+
+                                    const rip1 = document.createElement('div');
+                                    rip1.style.cssText = `position: absolute; top: 50%; left: 50%; width: 100%; height: 100%; border-radius: 50%; border: 2px solid ${currentCustomMove.rippleColor}; transform: translate(-50%, -50%); animation: fakeBrilliantRipple ${dur} infinite ease-out; --ripple-scale: ${currentCustomMove.dist}; box-sizing: border-box;`;
+
+                                    const rip2 = document.createElement('div');
+                                    rip2.style.cssText = `position: absolute; top: 50%; left: 50%; width: 100%; height: 100%; border-radius: 50%; border: 2px solid ${currentCustomMove.rippleColor}; transform: translate(-50%, -50%); animation: fakeBrilliantRipple ${dur} infinite ease-out ${delay2}; --ripple-scale: ${currentCustomMove.dist}; box-sizing: border-box;`;
+
+                                    iconWrapper.appendChild(rip1);
+                                    iconWrapper.appendChild(rip2);
+                                }
+
+                                const img = document.createElement('img');
+                                img.src = currentCustomMove.imgB64;
+                                img.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; z-index: 2; filter: drop-shadow(0px 2px 3px rgba(0,0,0,0.5));';
+
+                                iconWrapper.appendChild(img);
+                                wrapperLayer.appendChild(iconWrapper);
+                            }
+                            sqDiv.appendChild(wrapperLayer);
+                        } else {
+                            if (useVid && currentMoveVideoUrl) {
+                                const vid = document.createElement('video');
+                                vid.src = currentMoveVideoUrl;
+                                vid.autoplay = true;
+                                vid.loop = true;
+                                vid.muted = true;
+                                vid.playsInline = true;
+                                vid.style.cssText = `width: 100% !important; height: 100% !important; object-fit: cover !important; pointer-events: none !important; border: none !important; clip-path: circle(${radiusClip} at 50% 50%) !important; ${opacityStr}`;
+                                sqDiv.appendChild(vid);
+                            } else if (useImg && activeImgData) {
+                                const imgDiv = document.createElement('div');
+                                imgDiv.style.cssText = `width: 100% !important; height: 100% !important; background-image: url("${activeImgData}") !important; background-size: cover !important; background-position: center !important; pointer-events: none !important; clip-path: circle(${radiusClip} at 50% 50%) !important; ${opacityStr}`;
+                                sqDiv.appendChild(imgDiv);
+                            }
+                        }
+                        fxLayer.appendChild(sqDiv);
+                    });
+
+                    board.insertBefore(fxLayer, board.firstChild);
+                } else {
+                    if (!isCustomActive && useVid && fxLayer) {
+                        fxLayer.querySelectorAll('video').forEach(vid => {
+                            if (vid.paused) vid.play().catch(()=>{});
+                        });
+                    }
+                }
+            });
+        } else {
+            dynamicHighlightStyle.innerHTML = '';
+            document.querySelectorAll('#xadrez-legal-move-layer').forEach(layer => layer.remove());
+        }
+    }, 150);
+})();
