@@ -2,8 +2,8 @@
 //
 // @name         Roleta Maluca Chess.com
 // @namespace    http://tampermonkey.net/
-// @version      1.2
-// @description  Roleta 60fps com música de fundo, confetes e sons de comemoração.
+// @version      1.3
+// @description  Roleta 60fps com música de fundo, confetes, sons de comemoração e sistema anti-repetição.
 // @match        *://*.chess.com/*
 // @grant        none
 // ==/UserScript==
@@ -49,8 +49,12 @@
     let currentMode = localStorage.getItem('chessRouletteMode') || 'white';
     let savedResult = JSON.parse(localStorage.getItem('chessRouletteResult')) || null;
 
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // --- NOVO: Variáveis para controle de repetição e estado de mudo ---
+    let unplayedWhite = JSON.parse(localStorage.getItem('chessRouletteUnplayedWhite')) || [];
+    let unplayedBlack = JSON.parse(localStorage.getItem('chessRouletteUnplayedBlack')) || [];
+    let isMuted = localStorage.getItem('chessRouletteMuted') === 'true';
 
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     let isBgmPlaying = false;
     let bgmTimerID;
     let nextNoteTime = 0;
@@ -58,7 +62,7 @@
     let currentNote = 0;
 
     function playNote(freq, time) {
-        if (!isBgmPlaying) return;
+        if (!isBgmPlaying || isMuted) return;
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.type = 'triangle';
@@ -82,7 +86,7 @@
     }
 
     function startBGM() {
-        if (isBgmPlaying) return;
+        if (isBgmPlaying || isMuted) return;
         isBgmPlaying = true;
         if (audioCtx.state === 'suspended') audioCtx.resume();
         nextNoteTime = audioCtx.currentTime + 0.1;
@@ -95,6 +99,7 @@
     }
 
     function playTick() {
+        if (isMuted) return;
         if (audioCtx.state === 'suspended') audioCtx.resume();
         const osc = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
@@ -110,6 +115,7 @@
     }
 
     function playTada() {
+        if (isMuted) return;
         if (audioCtx.state === 'suspended') audioCtx.resume();
         const now = audioCtx.currentTime;
         const notes = [
@@ -153,7 +159,6 @@
             let top = -20;
             let left = parseFloat(conf.style.left);
             let rot = 0;
-
             function animateConf() {
                 top += speed;
                 left += drift;
@@ -175,41 +180,53 @@
     const style = document.createElement('style');
     style.textContent = `
         #chess-roulette-btn {
-            position: fixed; bottom: 20px; left: 20px; z-index: 100000;
+            position: fixed;
+            bottom: 20px; left: 20px; z-index: 100000;
             width: 40px; height: 40px; border-radius: 50%;
             background: #D4AF37; cursor: pointer;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3); border: 2px solid #FFF;
             display: flex; justify-content: center; align-items: center;
-            font-size: 20px; color: #fff; transition: transform 0.2s;
+            font-size: 20px; color: #fff;
+            transition: transform 0.2s;
         }
         #chess-roulette-btn:hover { transform: scale(1.1); }
         #chess-roulette-gui {
-            position: fixed; top: 100px; left: 100px; z-index: 100001;
+            position: fixed;
+            top: 100px; left: 100px; z-index: 100001;
             width: 320px; background: #1a1a1a; border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8); border: 2px solid #D4AF37;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            border: 2px solid #D4AF37;
             display: none; flex-direction: column; align-items: center;
             font-family: Arial, sans-serif; overflow: hidden;
         }
         #chess-roulette-header {
-            width: 100%; background: #333; padding: 10px; box-sizing: border-box;
+            width: 100%;
+            background: #333; padding: 10px; box-sizing: border-box;
             cursor: move; display: flex; justify-content: space-between;
             align-items: center; border-bottom: 2px solid #D4AF37;
         }
         #chess-roulette-title { color: #D4AF37; font-weight: bold; font-size: 15px; margin:0; text-transform: uppercase;}
-        #chess-roulette-close {
+
+        /* NOVO: Classe para agrupar os botões do cabeçalho */
+        .header-buttons { display: flex; gap: 8px; }
+
+        #chess-roulette-close, #chess-roulette-mute {
             color: #fff; cursor: pointer; background: none; border: none; font-size: 16px;
         }
         .roulette-container { position: relative; margin: 15px 0; width: 250px; height: 250px; }
         #roulette-canvas { width: 100%; height: 100%; border-radius: 50%; }
         #roulette-pin {
-            position: absolute; top: -5px; left: 50%; transform: translateX(-50%);
+            position: absolute;
+            top: -5px; left: 50%; transform: translateX(-50%);
             width: 0; height: 0; border-left: 15px solid transparent;
-            border-right: 15px solid transparent; border-top: 30px solid #FFD700;
+            border-right: 15px solid transparent;
+            border-top: 30px solid #FFD700;
             z-index: 10; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));
             transform-origin: top center; transition: transform 0.1s;
         }
         #spin-btn {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            position: absolute;
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 50px; height: 50px; border-radius: 50%; background: #FFF;
             border: 4px solid #D4AF37; font-weight: bold; cursor: pointer;
             z-index: 10; font-size: 24px; color: #D4AF37;
@@ -237,13 +254,15 @@
     toggleBtn.id = 'chess-roulette-btn';
     toggleBtn.innerHTML = '🎡';
     document.body.appendChild(toggleBtn);
-
     const gui = document.createElement('div');
     gui.id = 'chess-roulette-gui';
     gui.innerHTML = `
         <div id="chess-roulette-header">
             <h3 id="chess-roulette-title">Roleta Maluca</h3>
-            <button id="chess-roulette-close">✖</button>
+            <div class="header-buttons">
+                <button id="chess-roulette-mute" title="Ligar/Desligar Música">${isMuted ? '🔇' : '🎵'}</button>
+                <button id="chess-roulette-close" title="Fechar">✖</button>
+            </div>
         </div>
         <div class="controls">
             <button id="mode-white" class="${currentMode === 'white' ? 'active' : ''}">Brancas</button>
@@ -275,12 +294,12 @@
     const modeBlackBtn = document.getElementById('mode-black');
     const resetBtn = document.getElementById('reset-btn');
     const pin = document.getElementById('roulette-pin');
+    const muteBtn = document.getElementById('chess-roulette-mute');
 
     const offCanvas = document.createElement('canvas');
     offCanvas.width = 300;
     offCanvas.height = 300;
     const offCtx = offCanvas.getContext('2d');
-
     let isSpinning = false;
     let currentRotation = 0;
     let blinkState = true;
@@ -290,13 +309,42 @@
         return currentMode === 'white' ? whiteOpenings : blackDefenses;
     }
 
+    // --- NOVO: Função que puxa uma opção aleatória sem repetir ---
+    function getNextRandomItem() {
+        let currentItems = getActiveItems();
+        let unplayed = currentMode === 'white' ? unplayedWhite : unplayedBlack;
+
+        // Se o array estiver vazio (todas as opções já foram), reseta e preenche com todos os índices
+        if (unplayed.length === 0) {
+            for (let i = 0; i < currentItems.length; i++) {
+                unplayed.push(i);
+            }
+        }
+
+        // Sorteia um índice aleatório DENTRO do array de "não jogados"
+        let randomIndexInUnplayed = Math.floor(Math.random() * unplayed.length);
+        let actualItemIndex = unplayed[randomIndexInUnplayed];
+
+        // Remove a opção sorteada para não cair de novo na próxima vez
+        unplayed.splice(randomIndexInUnplayed, 1);
+
+        // Salva o novo estado no localStorage
+        if (currentMode === 'white') {
+            localStorage.setItem('chessRouletteUnplayedWhite', JSON.stringify(unplayed));
+        } else {
+            localStorage.setItem('chessRouletteUnplayedBlack', JSON.stringify(unplayed));
+        }
+
+        return currentItems[actualItemIndex];
+    }
+    // ------------------------------------------------------------------
+
     function preRenderWheel() {
         const displayItems = getActiveItems().slice(0, 9);
         const numSlices = displayItems.length;
         const sliceAngle = (2 * Math.PI) / numSlices;
         const center = 150;
         const radius = 140;
-
         offCtx.clearRect(0, 0, 300, 300);
         for (let i = 0; i < numSlices; i++) {
             offCtx.beginPath();
@@ -344,14 +392,14 @@
         ctx.lineWidth = 2;
         ctx.strokeStyle = '#B8860B';
         ctx.stroke();
-
         for (let i = 0; i < 18; i++) {
             const angle = (i * Math.PI) / 9;
             const lx = center + Math.cos(angle) * radius;
             const ly = center + Math.sin(angle) * radius;
             ctx.beginPath();
             ctx.arc(lx, ly, 4, 0, 2 * Math.PI);
-            ctx.fillStyle = (i % 2 === 0) ? (blinkState ? '#FFF' : '#FFD700') : (blinkState ? '#FFD700' : '#FFF');
+            ctx.fillStyle = (i % 2 === 0) ?
+            (blinkState ? '#FFF' : '#FFD700') : (blinkState ? '#FFD700' : '#FFF');
             ctx.shadowColor = ctx.fillStyle;
             ctx.shadowBlur = 10;
             ctx.fill();
@@ -372,7 +420,6 @@
     }
 
     if (savedResult) updateResultDisplay(savedResult);
-
     spinBtn.addEventListener('click', () => {
         if (isSpinning) return;
         isSpinning = true;
@@ -406,7 +453,6 @@
             }
 
             drawRoulette();
-
             if (progress < 1) {
                 requestAnimationFrame(animate);
             } else {
@@ -414,9 +460,8 @@
                 clearInterval(blinkInterval);
                 blinkInterval = setInterval(() => { blinkState = !blinkState; drawRoulette(); }, 500);
 
-                const allItems = getActiveItems();
-                const randomIndex = Math.floor(Math.random() * allItems.length);
-                const selectedItem = allItems[randomIndex];
+                // --- MODIFICADO: Puxar o item do novo sistema que não repete ---
+                const selectedItem = getNextRandomItem();
 
                 savedResult = selectedItem;
                 localStorage.setItem('chessRouletteResult', JSON.stringify(savedResult));
@@ -453,9 +498,28 @@
 
     resetBtn.addEventListener('click', () => {
         if (isSpinning) return;
+
+        // --- MODIFICADO: Limpa também o histórico para permitir repetições desde o zero ---
         localStorage.removeItem('chessRouletteResult');
+        localStorage.removeItem('chessRouletteUnplayedWhite');
+        localStorage.removeItem('chessRouletteUnplayedBlack');
+        unplayedWhite = [];
+        unplayedBlack = [];
+
         savedResult = null;
         updateResultDisplay(null);
+    });
+
+    // --- NOVO: Lógica do botão de mute ---
+    muteBtn.addEventListener('click', () => {
+        isMuted = !isMuted;
+        localStorage.setItem('chessRouletteMuted', isMuted);
+        muteBtn.innerText = isMuted ? '🔇' : '🎵';
+        if (isMuted) {
+            stopBGM();
+        } else {
+            startBGM();
+        }
     });
 
     toggleBtn.addEventListener('click', () => {
@@ -464,7 +528,7 @@
             stopBGM();
         } else {
             gui.style.display = 'flex';
-            startBGM();
+            startBGM(); // Vai respeitar se o mute estiver ativo graças ao if() modificado na função
         }
         drawRoulette();
     });
