@@ -1,0 +1,500 @@
+// ==UserScript==
+//
+// @name         Roleta Maluca Chess.com
+// @namespace    http://tampermonkey.net/
+// @version      1.2
+// @description  Roleta 60fps com música de fundo, confetes e sons de comemoração.
+// @match        *://*.chess.com/*
+// @grant        none
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    const colors = ['#8BC34A', '#9C27B0', '#F44336', '#FF9800', '#78909C', '#263238', '#03A9F4', '#FFC107', '#CDDC39'];
+
+    const whiteOpenings = [
+        { name: "Gambito Ismael", variation: "Fuga do Hospicio", notation: "1.e4 e5 2.Cf3 Cc6 3.Cc3 Cf6 4.Cxe5" },
+        { name: "Gambito PipipiTchu", variation: "Fic Tranquilo", notation: "1.e4 2.f4 3.Cf3 4.c3" },
+        { name: "Gambito CPF Cancelado", variation: "FBI, Open the Door", notation: "1.d4 2.e4 3.c3 4.f3" },
+        { name: "Gambito da Batatinha", variation: "Maionese com Chumbo", notation: "1.c4 2.b4 3.a3 4.e4" },
+        { name: "Gambito Laranja Mofada", variation: "Charope amargo", notation: "1.g4 2.Bg2 3.c4 4.Db3" },
+        { name: "Abertura Barabin' Barabest", variation: "Ataque do Soldado Manco", notation: "1.a3 e5 2.h4 3.Th3" },
+        { name: "Abertura da Galinha Pestiada", variation: "Ataque do Pavão Malandreu, Subvariação Pirlim Pimpim", notation: "1.g4 d5 2.Bg2 3.c4" },
+        { name: "Abertura Pipipi Popopo", variation: "Derrame Cerebral", notation: "1.h4 2.Ca3 3.g3" },
+        { name: "Abertura Tutti Fruti", variation: "Banana com Ovos", notation: "1.b4 2.Bb2 3.e3" },
+        { name: "Abertura Tralalero Tralala", variation: "Titanic", notation: "1.Cf3 2.a3 3.h3" },
+        { name: "Abertura Bilu Tetéia", variation: "Cabeça de Tilápia", notation: "1.d3 2.Cd2 3.e4" },
+        { name: "Abertura da Minhoca", variation: "Smilingüido", notation: "1.b4 2.Bb2 3.a3" },
+        { name: "Abertura Paralelepípedo", variation: "Pneu Cansado", notation: "1.h4 2.Ch3 3.g3" },
+        { name: "Abertura do Pneu Murcho", variation: "Cabeça de Tilápia", notation: "1.a4 2.Ta3 3.h3" },
+        { name: "Abertura Franskestein", variation: "Parafuso Solto", notation: "1.a3 2.Th2 3.f3 4.Rf2" },
+        { name: "Abertura Pipipi Popopo", variation: "Pirlim Pimpim", notation: "1.g4 2.Bg2 3.c4" }
+    ];
+
+    const blackDefenses = [
+        { name: "Defesa Indiana", variation: "Feijão e Arroz", notation: "1.e4 a5 2.d4 Ta6 3.Cf3 e6" },
+        { name: "Defesa do Cactu", variation: "Sangrenta", notation: "1.e4 g5 2.d4 Bg7 3.Cf3 c5" },
+        { name: "Defesa da Tartaruga", variation: "Flash", notation: "1.e4 Na6 2.d4 c6 3.Cf3" },
+        { name: "Defesa Nemesis", variation: "Cagaço Gaymes", notation: "1.e4 h6 2.d4 g5 3.Cf3 Bg7" },
+        { name: "Defesa do Pavão", variation: "Dança Hipnotica", notation: "1.e4 f6 2.d4 Kf7 3.Cf3 e6" },
+        { name: "Defesa Triângulo das Bermudas", variation: "Barco Afundado", notation: "1.e4 b5 2.d4 Bb7 3.Cf3 e6" },
+        { name: "Defesa do Indio", variation: "Flechada Nas Costas", notation: "1.e4 a6 2.d4 h5 3.Cf3 b5" },
+        { name: "Defesa do Sapo", variation: "Cueca Magnética", notation: "1.e4 g6 2.d4 Bh6 3.Cf3 d6" },
+        { name: "Defesa da Penellope", variation: "Beijos Mortais", notation: "1.e4 c6 2.d4 Qa5+ 3.Cf3 d5" },
+        { name: "Defesa do Jig Saw", variation: "Que Comecem os Jogos", notation: "1.e4 h5 2.d4 Th6 3.Cf3 a5 4.Bc4 Ta6 5.O-O Tg6" },
+        { name: "Defesa do Nokia Tijolão", variation: "Tela Trincada ☠️", notation: "1.e4 h5 2.d4 Rh7 3.Cf3 g6" }
+    ];
+
+    let currentMode = localStorage.getItem('chessRouletteMode') || 'white';
+    let savedResult = JSON.parse(localStorage.getItem('chessRouletteResult')) || null;
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    let isBgmPlaying = false;
+    let bgmTimerID;
+    let nextNoteTime = 0;
+    const melody = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63]; // C4, E4, G4, C5, G4, E4
+    let currentNote = 0;
+
+    function playNote(freq, time) {
+        if (!isBgmPlaying) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.value = freq;
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        gain.gain.setValueAtTime(0.015, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
+        osc.start(time);
+        osc.stop(time + 0.2);
+    }
+
+    function scheduleBGM() {
+        if (!isBgmPlaying) return;
+        while (nextNoteTime < audioCtx.currentTime + 0.1) {
+            playNote(melody[currentNote], nextNoteTime);
+            nextNoteTime += 0.25;
+            currentNote = (currentNote + 1) % melody.length;
+        }
+        bgmTimerID = requestAnimationFrame(scheduleBGM);
+    }
+
+    function startBGM() {
+        if (isBgmPlaying) return;
+        isBgmPlaying = true;
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        nextNoteTime = audioCtx.currentTime + 0.1;
+        scheduleBGM();
+    }
+
+    function stopBGM() {
+        isBgmPlaying = false;
+        cancelAnimationFrame(bgmTimerID);
+    }
+
+    function playTick() {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.05);
+        gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.05);
+    }
+
+    function playTada() {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const now = audioCtx.currentTime;
+        const notes = [
+            { f: 523.25, d: 0.1, t: 0 },    // C5
+            { f: 659.25, d: 0.1, t: 0.12 }, // E5
+            { f: 783.99, d: 0.1, t: 0.24 }, // G5
+            { f: 1046.50, d: 0.5, t: 0.36 } // C6
+        ];
+        notes.forEach(note => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'square';
+            osc.frequency.value = note.f;
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            gain.gain.setValueAtTime(0.05, now + note.t);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + note.t + note.d);
+            osc.start(now + note.t);
+            osc.stop(now + note.t + note.d);
+        });
+    }
+
+    function shootConfetti() {
+        const colors = ['#fce18a', '#ff726d', '#b48def', '#f4306d', '#8BC34A', '#03A9F4'];
+        for (let i = 0; i < 120; i++) {
+            const conf = document.createElement('div');
+            conf.style.position = 'fixed';
+            conf.style.width = Math.random() * 8 + 4 + 'px';
+            conf.style.height = Math.random() * 15 + 5 + 'px';
+            conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            conf.style.top = '-20px';
+            conf.style.left = Math.random() * 100 + 'vw';
+            conf.style.opacity = Math.random() + 0.5;
+            conf.style.transform = `rotate(${Math.random() * 360}deg)`;
+            conf.style.pointerEvents = 'none';
+            conf.style.zIndex = '1000000';
+            document.body.appendChild(conf);
+
+            const speed = Math.random() * 4 + 3;
+            const drift = (Math.random() - 0.5) * 3;
+            let top = -20;
+            let left = parseFloat(conf.style.left);
+            let rot = 0;
+
+            function animateConf() {
+                top += speed;
+                left += drift;
+                rot += speed * 2;
+                conf.style.top = top + 'px';
+                conf.style.left = left + 'vw';
+                conf.style.transform = `rotate(${rot}deg)`;
+
+                if (top < window.innerHeight) {
+                    requestAnimationFrame(animateConf);
+                } else {
+                    conf.remove();
+                }
+            }
+            requestAnimationFrame(animateConf);
+        }
+    }
+
+    const style = document.createElement('style');
+    style.textContent = `
+        #chess-roulette-btn {
+            position: fixed; bottom: 20px; left: 20px; z-index: 100000;
+            width: 40px; height: 40px; border-radius: 50%;
+            background: #D4AF37; cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3); border: 2px solid #FFF;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 20px; color: #fff; transition: transform 0.2s;
+        }
+        #chess-roulette-btn:hover { transform: scale(1.1); }
+        #chess-roulette-gui {
+            position: fixed; top: 100px; left: 100px; z-index: 100001;
+            width: 320px; background: #1a1a1a; border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8); border: 2px solid #D4AF37;
+            display: none; flex-direction: column; align-items: center;
+            font-family: Arial, sans-serif; overflow: hidden;
+        }
+        #chess-roulette-header {
+            width: 100%; background: #333; padding: 10px; box-sizing: border-box;
+            cursor: move; display: flex; justify-content: space-between;
+            align-items: center; border-bottom: 2px solid #D4AF37;
+        }
+        #chess-roulette-title { color: #D4AF37; font-weight: bold; font-size: 15px; margin:0; text-transform: uppercase;}
+        #chess-roulette-close {
+            color: #fff; cursor: pointer; background: none; border: none; font-size: 16px;
+        }
+        .roulette-container { position: relative; margin: 15px 0; width: 250px; height: 250px; }
+        #roulette-canvas { width: 100%; height: 100%; border-radius: 50%; }
+        #roulette-pin {
+            position: absolute; top: -5px; left: 50%; transform: translateX(-50%);
+            width: 0; height: 0; border-left: 15px solid transparent;
+            border-right: 15px solid transparent; border-top: 30px solid #FFD700;
+            z-index: 10; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));
+            transform-origin: top center; transition: transform 0.1s;
+        }
+        #spin-btn {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 50px; height: 50px; border-radius: 50%; background: #FFF;
+            border: 4px solid #D4AF37; font-weight: bold; cursor: pointer;
+            z-index: 10; font-size: 24px; color: #D4AF37;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.2), 0 0 10px rgba(0,0,0,0.5);
+            display: flex; justify-content: center; align-items: center;
+        }
+        .controls { display: flex; gap: 10px; margin-bottom: 10px; width: 100%; justify-content: center;}
+        .controls button {
+            background: #333; color: #fff; border: 1px solid #D4AF37;
+            padding: 5px 10px; border-radius: 5px; cursor: pointer;
+        }
+        .controls button.active { background: #D4AF37; color: #000; font-weight: bold;}
+        #roulette-result {
+            width: 90%; text-align: center; color: #fff; margin-bottom: 15px;
+            min-height: 50px; background: #2a2a2a; padding: 10px; border-radius: 5px;
+            box-sizing: border-box; border: 1px dashed #555;
+        }
+        #result-name { font-weight: bold; color: #D4AF37; font-size: 15px; margin-bottom: 2px; }
+        #result-variation { font-size: 12px; color: #bbb; margin-bottom: 6px; font-style: italic; }
+        #result-notation { font-family: monospace; color: #8BC34A; font-size: 13px; font-weight: bold; }
+    `;
+    document.head.appendChild(style);
+
+    const toggleBtn = document.createElement('div');
+    toggleBtn.id = 'chess-roulette-btn';
+    toggleBtn.innerHTML = '🎡';
+    document.body.appendChild(toggleBtn);
+
+    const gui = document.createElement('div');
+    gui.id = 'chess-roulette-gui';
+    gui.innerHTML = `
+        <div id="chess-roulette-header">
+            <h3 id="chess-roulette-title">Roleta Maluca</h3>
+            <button id="chess-roulette-close">✖</button>
+        </div>
+        <div class="controls">
+            <button id="mode-white" class="${currentMode === 'white' ? 'active' : ''}">Brancas</button>
+            <button id="mode-black" class="${currentMode === 'black' ? 'active' : ''}">Negras</button>
+        </div>
+        <div class="roulette-container">
+            <div id="roulette-pin"></div>
+            <canvas id="roulette-canvas" width="300" height="300"></canvas>
+            <div id="spin-btn">⭐</div>
+        </div>
+        <div id="roulette-result">
+            <div id="result-name">Gire a roleta!</div>
+            <div id="result-variation"></div>
+            <div id="result-notation"></div>
+        </div>
+        <div class="controls">
+            <button id="reset-btn">Resetar Histórico</button>
+        </div>
+    `;
+    document.body.appendChild(gui);
+
+    const canvas = document.getElementById('roulette-canvas');
+    const ctx = canvas.getContext('2d');
+    const spinBtn = document.getElementById('spin-btn');
+    const resultName = document.getElementById('result-name');
+    const resultVariation = document.getElementById('result-variation');
+    const resultNotation = document.getElementById('result-notation');
+    const modeWhiteBtn = document.getElementById('mode-white');
+    const modeBlackBtn = document.getElementById('mode-black');
+    const resetBtn = document.getElementById('reset-btn');
+    const pin = document.getElementById('roulette-pin');
+
+    const offCanvas = document.createElement('canvas');
+    offCanvas.width = 300;
+    offCanvas.height = 300;
+    const offCtx = offCanvas.getContext('2d');
+
+    let isSpinning = false;
+    let currentRotation = 0;
+    let blinkState = true;
+    let blinkInterval = setInterval(() => { blinkState = !blinkState; drawRoulette(); }, 500);
+
+    function getActiveItems() {
+        return currentMode === 'white' ? whiteOpenings : blackDefenses;
+    }
+
+    function preRenderWheel() {
+        const displayItems = getActiveItems().slice(0, 9);
+        const numSlices = displayItems.length;
+        const sliceAngle = (2 * Math.PI) / numSlices;
+        const center = 150;
+        const radius = 140;
+
+        offCtx.clearRect(0, 0, 300, 300);
+        for (let i = 0; i < numSlices; i++) {
+            offCtx.beginPath();
+            offCtx.moveTo(center, center);
+            offCtx.arc(center, center, radius, i * sliceAngle, (i + 1) * sliceAngle);
+            offCtx.fillStyle = colors[i % colors.length];
+            offCtx.fill();
+
+            offCtx.save();
+            offCtx.translate(center, center);
+            offCtx.rotate(i * sliceAngle + sliceAngle / 2);
+            offCtx.textAlign = "right";
+            offCtx.fillStyle = "#fff";
+            offCtx.font = "bold 12px Arial";
+            offCtx.shadowColor = "rgba(0,0,0,0.5)";
+            offCtx.shadowBlur = 4;
+            let text = displayItems[i].name;
+            if(text.length > 15) text = text.substring(0,12) + '...';
+            offCtx.fillText(text, radius - 20, 5);
+            offCtx.restore();
+        }
+    }
+
+    function drawRoulette() {
+        const center = 150;
+        const radius = 140;
+
+        ctx.clearRect(0, 0, 300, 300);
+
+        ctx.save();
+        ctx.translate(center, center);
+        ctx.rotate(currentRotation);
+        ctx.translate(-center, -center);
+        ctx.drawImage(offCanvas, 0, 0);
+        ctx.restore();
+
+        ctx.beginPath();
+        ctx.arc(center, center, radius, 0, 2 * Math.PI);
+        ctx.lineWidth = 15;
+        ctx.strokeStyle = '#D4AF37';
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(center, center, radius + 7.5, 0, 2 * Math.PI);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#B8860B';
+        ctx.stroke();
+
+        for (let i = 0; i < 18; i++) {
+            const angle = (i * Math.PI) / 9;
+            const lx = center + Math.cos(angle) * radius;
+            const ly = center + Math.sin(angle) * radius;
+            ctx.beginPath();
+            ctx.arc(lx, ly, 4, 0, 2 * Math.PI);
+            ctx.fillStyle = (i % 2 === 0) ? (blinkState ? '#FFF' : '#FFD700') : (blinkState ? '#FFD700' : '#FFF');
+            ctx.shadowColor = ctx.fillStyle;
+            ctx.shadowBlur = 10;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+    }
+
+    function updateResultDisplay(data) {
+        if (data) {
+            resultName.innerText = data.name;
+            resultVariation.innerText = "Var: " + data.variation;
+            resultNotation.innerText = data.notation;
+        } else {
+            resultName.innerText = "Gire a roleta!";
+            resultVariation.innerText = "";
+            resultNotation.innerText = "";
+        }
+    }
+
+    if (savedResult) updateResultDisplay(savedResult);
+
+    spinBtn.addEventListener('click', () => {
+        if (isSpinning) return;
+        isSpinning = true;
+
+        clearInterval(blinkInterval);
+        blinkInterval = setInterval(() => { blinkState = !blinkState; drawRoulette(); }, 100);
+
+        const spinRounds = 5 + Math.random() * 5;
+        const randomTarget = Math.random() * Math.PI * 2;
+        const totalRotation = currentRotation + (spinRounds * Math.PI * 2) + randomTarget;
+
+        const duration = 4000;
+        const startTime = performance.now();
+        const initialRotation = currentRotation;
+
+        let lastTickAngle = currentRotation;
+        const numSlices = 9;
+
+        function animate(time) {
+            const elapsed = time - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+
+            const easeOut = 1 - Math.pow(1 - progress, 3);
+            currentRotation = initialRotation + (totalRotation - initialRotation) * easeOut;
+
+            if (currentRotation - lastTickAngle > (2 * Math.PI / numSlices)) {
+                playTick();
+                pin.style.transform = "translateX(-50%) rotate(15deg)";
+                setTimeout(() => pin.style.transform = "translateX(-50%) rotate(0deg)", 50);
+                lastTickAngle += (2 * Math.PI / numSlices);
+            }
+
+            drawRoulette();
+
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                isSpinning = false;
+                clearInterval(blinkInterval);
+                blinkInterval = setInterval(() => { blinkState = !blinkState; drawRoulette(); }, 500);
+
+                const allItems = getActiveItems();
+                const randomIndex = Math.floor(Math.random() * allItems.length);
+                const selectedItem = allItems[randomIndex];
+
+                savedResult = selectedItem;
+                localStorage.setItem('chessRouletteResult', JSON.stringify(savedResult));
+                updateResultDisplay(selectedItem);
+
+                playTada();
+                shootConfetti();
+            }
+        }
+        requestAnimationFrame(animate);
+    });
+
+    modeWhiteBtn.addEventListener('click', () => {
+        if (isSpinning) return;
+        currentMode = 'white';
+        localStorage.setItem('chessRouletteMode', currentMode);
+        modeWhiteBtn.classList.add('active');
+        modeBlackBtn.classList.remove('active');
+        currentRotation = 0;
+        preRenderWheel();
+        drawRoulette();
+    });
+
+    modeBlackBtn.addEventListener('click', () => {
+        if (isSpinning) return;
+        currentMode = 'black';
+        localStorage.setItem('chessRouletteMode', currentMode);
+        modeBlackBtn.classList.add('active');
+        modeWhiteBtn.classList.remove('active');
+        currentRotation = 0;
+        preRenderWheel();
+        drawRoulette();
+    });
+
+    resetBtn.addEventListener('click', () => {
+        if (isSpinning) return;
+        localStorage.removeItem('chessRouletteResult');
+        savedResult = null;
+        updateResultDisplay(null);
+    });
+
+    toggleBtn.addEventListener('click', () => {
+        if (gui.style.display === 'flex') {
+            gui.style.display = 'none';
+            stopBGM();
+        } else {
+            gui.style.display = 'flex';
+            startBGM();
+        }
+        drawRoulette();
+    });
+
+    document.getElementById('chess-roulette-close').addEventListener('click', () => {
+        gui.style.display = 'none';
+        stopBGM();
+    });
+
+    const header = document.getElementById('chess-roulette-header');
+    let isDragging = false;
+    let offsetX, offsetY;
+
+    header.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        offsetX = e.clientX - gui.getBoundingClientRect().left;
+        offsetY = e.clientY - gui.getBoundingClientRect().top;
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (isDragging) {
+            gui.style.left = `${e.clientX - offsetX}px`;
+            gui.style.top = `${e.clientY - offsetY}px`;
+        }
+    });
+
+    document.addEventListener('mouseup', () => {
+        isDragging = false;
+    });
+
+    preRenderWheel();
+    drawRoulette();
+})();
